@@ -32,3 +32,6 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 })
+
+// scrollIntoView is not implemented in jsdom; required by cmdk Command component.
+Element.prototype.scrollIntoView = vi.fn()
