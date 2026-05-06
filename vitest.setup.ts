@@ -35,3 +35,7 @@ Object.defineProperty(window, 'matchMedia', {
 
 // scrollIntoView is not implemented in jsdom; required by cmdk Command component.
 Element.prototype.scrollIntoView = vi.fn()
+
+// setPointerCapture / releasePointerCapture not implemented in jsdom; required by vaul Drawer.
+Element.prototype.setPointerCapture = vi.fn()
+Element.prototype.releasePointerCapture = vi.fn()
