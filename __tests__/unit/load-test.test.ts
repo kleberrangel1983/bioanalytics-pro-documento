@@ -284,4 +284,47 @@ describe("computeSlaBreaches", () => {
     )
     expect(latencyOrErrorBreaches).toHaveLength(0)
   })
+
+  // ── endpointSummaries breach path (line 228) ──────────────────────────────
+
+  it("reports a breach message per failed endpoint in endpointSummaries", () => {
+    const goodSnap = {
+      ts: 5, rps: 5, p50Ms: 100, p95Ms: 200, p99Ms: 300, errorRatePct: 0, activeUsers: 5,
+    }
+    const failedEndpoints = [
+      { path: "/api/patients", label: "Listar Pacientes", requests: 100,
+        errorsCount: 5, p50Ms: 400, p95Ms: 1500, p99Ms: 2000, passed: false },
+      { path: "/api/triage",   label: "Triagem",          requests: 50,
+        errorsCount: 2, p50Ms: 300, p95Ms: 1200, p99Ms: 1800, passed: false },
+    ]
+    const breaches = computeSlaBreaches([goodSnap], failedEndpoints, SMOKE)
+    const endpointBreaches = breaches.filter((b) => b.includes("Endpoint"))
+    expect(endpointBreaches).toHaveLength(2)
+    expect(endpointBreaches[0]).toContain("Listar Pacientes")
+    expect(endpointBreaches[1]).toContain("Triagem")
+  })
+
+  it("does not add endpoint breach messages when all endpoints passed", () => {
+    const goodSnap = {
+      ts: 5, rps: 5, p50Ms: 100, p95Ms: 200, p99Ms: 300, errorRatePct: 0, activeUsers: 5,
+    }
+    const passedEndpoints = [
+      { path: "/api/patients", label: "Listar Pacientes", requests: 100,
+        errorsCount: 0, p50Ms: 150, p95Ms: 400, p99Ms: 600, passed: true },
+    ]
+    const breaches = computeSlaBreaches([goodSnap], passedEndpoints, SMOKE)
+    expect(breaches.filter((b) => b.includes("Endpoint"))).toHaveLength(0)
+  })
+
+  it("endpoint breach message contains the endpoint label", () => {
+    const goodSnap = {
+      ts: 5, rps: 5, p50Ms: 100, p95Ms: 200, p99Ms: 300, errorRatePct: 0, activeUsers: 5,
+    }
+    const failed = [
+      { path: "/api/logs", label: "Logs de Auditoria", requests: 30,
+        errorsCount: 3, p50Ms: 600, p95Ms: 2000, p99Ms: 3000, passed: false },
+    ]
+    const breaches = computeSlaBreaches([goodSnap], failed, SMOKE)
+    expect(breaches.some((b) => b.includes("Logs de Auditoria"))).toBe(true)
+  })
 })
