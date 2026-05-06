@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Metric = {
   name: string;
@@ -69,12 +69,33 @@ function EditableNumber({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const [raw, setRaw] = useState(String(value));
+  const prevExternal = useRef(value);
+
+  // Sync when parent resets the value externally (not from our own onChange)
+  useEffect(() => {
+    if (value !== prevExternal.current) {
+      prevExternal.current = value;
+      setRaw(String(value));
+    }
+  }, [value]);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const str = e.target.value;
+    setRaw(str);
+    const parsed = parseFloat(str);
+    if (!isNaN(parsed)) {
+      prevExternal.current = parsed;
+      onChange(parsed);
+    }
+  }
+
   return (
     <input
-      type="number"
-      step="any"
-      value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      type="text"
+      inputMode="decimal"
+      value={raw}
+      onChange={handleChange}
       className="w-24 text-center border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
     />
   );
