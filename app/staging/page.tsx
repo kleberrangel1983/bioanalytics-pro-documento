@@ -272,6 +272,9 @@ export default function StagingPage() {
         <Button variant="ghost" asChild>
           <a href="/staging/rollback">Runbook de Rollback →</a>
         </Button>
+        <Button variant="ghost" asChild>
+          <a href="/staging/carga">Testes de Carga →</a>
+        </Button>
       </div>
 
       {/* ── evidence footer ── */}
