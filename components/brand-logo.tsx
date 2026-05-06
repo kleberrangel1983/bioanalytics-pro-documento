@@ -16,7 +16,7 @@ export function BrandLogo({ variant = "full", className, imageSize = 40 }: Brand
         style={{ width: imageSize, height: imageSize }}
       >
         <Image
-          src="/logo-bioanalytics.png"
+          src="/logo-bioanalytics.webp"
           alt="BioAnalytics Pro"
           width={imageSize}
           height={imageSize}
