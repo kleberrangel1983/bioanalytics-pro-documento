@@ -5,9 +5,12 @@ import {
   computeSlaBreaches,
   SCENARIOS,
 } from "@/lib/staging/load-test"
+import type { ScenarioId } from "@/lib/staging/load-test"
 
-const SMOKE = SCENARIOS.smoke
-const CARGA = SCENARIOS.carga
+const SMOKE  = SCENARIOS.smoke
+const CARGA  = SCENARIOS.carga
+const PICO   = SCENARIOS.pico
+const STRESS = SCENARIOS.stress
 
 describe("generateSnapshot", () => {
   it("returns a snapshot with all required fields", () => {
@@ -89,6 +92,84 @@ describe("buildEndpointSummaries", () => {
   })
 })
 
+// ── SCENARIOS catalogue ───────────────────────────────────────────────────────
+
+describe("SCENARIOS", () => {
+  it("has exactly the four expected keys", () => {
+    const expectedKeys: ScenarioId[] = ["smoke", "carga", "pico", "stress"]
+    expect(Object.keys(SCENARIOS).sort()).toEqual(expectedKeys.slice().sort())
+  })
+
+  it("each scenario has a unique virtualUsers count", () => {
+    const vus = Object.values(SCENARIOS).map((s) => s.virtualUsers)
+    expect(new Set(vus).size).toBe(4)
+  })
+
+  it("each scenario's endpoint weights sum to 1", () => {
+    for (const scenario of Object.values(SCENARIOS)) {
+      const total = scenario.endpoints.reduce((s, e) => s + e.weight, 0)
+      expect(total).toBeCloseTo(1, 5)
+    }
+  })
+
+  it("pico has more virtualUsers than carga", () => {
+    expect(PICO.virtualUsers).toBeGreaterThan(CARGA.virtualUsers)
+  })
+
+  it("stress has the highest virtualUsers of all scenarios", () => {
+    const max = Math.max(...Object.values(SCENARIOS).map((s) => s.virtualUsers))
+    expect(STRESS.virtualUsers).toBe(max)
+  })
+})
+
+// ── generateSnapshot — pico scenario ─────────────────────────────────────────
+
+describe("generateSnapshot — pico scenario", () => {
+  it("returns full virtualUsers (200) after ramp-up period", () => {
+    const snap = generateSnapshot(PICO.rampUpSeconds + 1, PICO)
+    expect(snap.activeUsers).toBe(PICO.virtualUsers)
+  })
+
+  it("ramps up linearly during ramp period", () => {
+    const snap = generateSnapshot(PICO.rampUpSeconds / 2, PICO)
+    expect(snap.activeUsers).toBeGreaterThan(0)
+    expect(snap.activeUsers).toBeLessThanOrEqual(PICO.virtualUsers)
+  })
+
+  it("p95 is always greater than p50 throughout pico duration", () => {
+    for (let t = 0; t <= PICO.durationSeconds; t += 10) {
+      const snap = generateSnapshot(t, PICO)
+      expect(snap.p95Ms).toBeGreaterThan(snap.p50Ms)
+    }
+  })
+
+  it("errorRatePct is non-negative", () => {
+    const snap = generateSnapshot(50, PICO)
+    expect(snap.errorRatePct).toBeGreaterThanOrEqual(0)
+  })
+})
+
+// ── generateSnapshot — stress scenario ───────────────────────────────────────
+
+describe("generateSnapshot — stress scenario", () => {
+  it("returns full virtualUsers (500) after ramp-up period", () => {
+    const snap = generateSnapshot(STRESS.rampUpSeconds + 1, STRESS)
+    expect(snap.activeUsers).toBe(STRESS.virtualUsers)
+  })
+
+  it("ramps up linearly during ramp period", () => {
+    const half = STRESS.rampUpSeconds / 2
+    const snap = generateSnapshot(half, STRESS)
+    expect(snap.activeUsers).toBeGreaterThan(0)
+    expect(snap.activeUsers).toBeLessThanOrEqual(STRESS.virtualUsers)
+  })
+
+  it("p99 is always >= p95 under stress load", () => {
+    const snap = generateSnapshot(STRESS.rampUpSeconds + 10, STRESS)
+    expect(snap.p99Ms).toBeGreaterThanOrEqual(snap.p95Ms)
+  })
+})
+
 describe("computeSlaBreaches", () => {
   it("returns empty array when given no snapshots", () => {
     expect(computeSlaBreaches([], [], SMOKE)).toEqual([])
@@ -128,5 +209,79 @@ describe("computeSlaBreaches", () => {
     }
     const breaches = computeSlaBreaches([lowRpsSnap], [], SMOKE)
     expect(breaches.some((b) => b.includes("Throughput"))).toBe(true)
+  })
+
+  // ── pico SLA thresholds (P95 < 2 000ms, errors < 2%, minRps 60) ──────────
+
+  it("pico: reports P95 breach when avg p95 exceeds 2 000ms", () => {
+    const badSnap = {
+      ts: 20, rps: 80, p50Ms: 800,
+      p95Ms: PICO.slaTargets.p95LatencyMs + 200, // 2 200ms
+      p99Ms: 4000, errorRatePct: 0, activeUsers: 200,
+    }
+    const breaches = computeSlaBreaches([badSnap], [], PICO)
+    expect(breaches.some((b) => b.includes("P95"))).toBe(true)
+  })
+
+  it("pico: reports error rate breach when errorRatePct exceeds 2%", () => {
+    const badSnap = {
+      ts: 20, rps: 80, p50Ms: 400, p95Ms: 1000, p99Ms: 2000,
+      errorRatePct: PICO.slaTargets.errorRatePct + 1, // 3%
+      activeUsers: 200,
+    }
+    const breaches = computeSlaBreaches([badSnap], [], PICO)
+    expect(breaches.some((b) => b.includes("erros"))).toBe(true)
+  })
+
+  it("pico: no P95 or error breach when metrics are within relaxed SLA", () => {
+    const goodSnap = {
+      ts: 20, rps: 70, p50Ms: 400,
+      p95Ms: PICO.slaTargets.p95LatencyMs - 100, // 1 900ms — within 2 000ms
+      p99Ms: 2500,
+      errorRatePct: PICO.slaTargets.errorRatePct - 0.5, // 1.5% — within 2%
+      activeUsers: 200,
+    }
+    const breaches = computeSlaBreaches([goodSnap], [], PICO)
+    const latencyOrErrorBreaches = breaches.filter(
+      (b) => b.includes("P95") || b.includes("erros")
+    )
+    expect(latencyOrErrorBreaches).toHaveLength(0)
+  })
+
+  // ── stress SLA thresholds (P95 < 3 000ms, errors < 5%, minRps 100) ───────
+
+  it("stress: reports P95 breach when avg p95 exceeds 3 000ms", () => {
+    const badSnap = {
+      ts: 40, rps: 120, p50Ms: 1200,
+      p95Ms: STRESS.slaTargets.p95LatencyMs + 500, // 3 500ms
+      p99Ms: 6000, errorRatePct: 0, activeUsers: 500,
+    }
+    const breaches = computeSlaBreaches([badSnap], [], STRESS)
+    expect(breaches.some((b) => b.includes("P95"))).toBe(true)
+  })
+
+  it("stress: reports error rate breach when errorRatePct exceeds 5%", () => {
+    const badSnap = {
+      ts: 40, rps: 120, p50Ms: 800, p95Ms: 2000, p99Ms: 3000,
+      errorRatePct: STRESS.slaTargets.errorRatePct + 1, // 6%
+      activeUsers: 500,
+    }
+    const breaches = computeSlaBreaches([badSnap], [], STRESS)
+    expect(breaches.some((b) => b.includes("erros"))).toBe(true)
+  })
+
+  it("stress: no P95 or error breach when metrics are within (relaxed) stress SLA", () => {
+    const goodSnap = {
+      ts: 40, rps: 150, p50Ms: 800,
+      p95Ms: STRESS.slaTargets.p95LatencyMs - 200, // 2 800ms — within 3 000ms
+      p99Ms: 4000,
+      errorRatePct: STRESS.slaTargets.errorRatePct - 1, // 4% — within 5%
+      activeUsers: 500,
+    }
+    const breaches = computeSlaBreaches([goodSnap], [], STRESS)
+    const latencyOrErrorBreaches = breaches.filter(
+      (b) => b.includes("P95") || b.includes("erros")
+    )
+    expect(latencyOrErrorBreaches).toHaveLength(0)
   })
 })
