@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint tests --ext .js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/smoke.test.js tests/mobile.test.js tests/whatsapp-confirmation.test.js tests/audit-log.test.js tests/audit-log-role-filter.test.js tests/crm-filter.test.js tests/tenant-access.test.js tests/access-policy.test.js tests/webhook-security.test.js tests/consent-log.test.js tests/backup-policy.test.js tests/reminder-window.test.js tests/message-rate-limit.test.js tests/appointment-status-policy.test.js tests/idempotency.test.js tests/incident-log.test.js tests/retry-policy.test.js tests/data-retention.test.js tests/privacy-alert.test.js tests/clinical-draft-guard.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
