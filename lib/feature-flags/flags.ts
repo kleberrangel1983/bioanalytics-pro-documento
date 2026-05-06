@@ -1,4 +1,4 @@
-import type { FeatureFlag, FlagState, FlagEvaluationResult, Environment } from "./types"
+import type { FeatureFlag, FlagState, FlagEvaluationResult, Environment, RoleRule } from "./types"
 import type { UserRole } from "@/lib/staging/types"
 
 // ─── Flag catalogue ───────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ export function evaluateFlag(
   }
 
   // enforce allowedRoles targeting rules before rollout evaluation
-  const roleRule = flag.targeting.find((r): r is import("./types").RoleRule => r.type === "roles")
+  const roleRule = flag.targeting.find((r): r is RoleRule => r.type === "roles")
   if (roleRule && !roleRule.allowedRoles.includes(role)) {
     return { flagId: flag.id, userId, role, environment: env, enabled: false, reason: "role_not_targeted", rolloutPct: state.rolloutPct }
   }

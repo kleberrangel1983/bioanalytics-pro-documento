@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { CHECKLIST, CATEGORY_META, computeBlockers, isApproved } from "@/lib/staging/golive-data"
 import type { CheckItem, CheckStatus, CheckCategory } from "@/lib/staging/golive-types"
+import { useAuth } from "@/lib/auth/context"
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,10 +40,11 @@ const STATUS_CYCLE: CheckStatus[] = ["pending", "ok", "fail", "na"]
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function GoLivePage() {
+  const { user } = useAuth()
   const [items, setItems] = useState<CheckItem[]>(() =>
     CHECKLIST.map((i) => ({ ...i }))
   )
-  const [executor, setExecutor] = useState("executor@bioanalytics.local")
+  const [executor, setExecutor] = useState(() => user?.email ?? "executor@bioanalytics.local")
   const [checkedAt] = useState(() => new Date().toLocaleString("pt-BR"))
 
   const cycleStatus = (id: string) => {
