@@ -140,6 +140,7 @@ export default function ObservabilidadePage() {
   const activeAlerts = alerts.filter((a) => !a.resolved)
 
   const start = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
     _tick = 0
     setPoints([])
     setAlerts([])
