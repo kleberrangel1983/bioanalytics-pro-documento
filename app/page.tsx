@@ -8,7 +8,6 @@ type Metric = {
   baseline: number;
   pos: number;
   metaValue: number;
-  metaLabel: string;
   critico: boolean;
   lowerIsBetter: boolean;
 };
@@ -20,7 +19,6 @@ const initialMetrics: Metric[] = [
     baseline: 28,
     pos: 14,
     metaValue: 15,
-    metaLabel: "≤ 15%",
     critico: true,
     lowerIsBetter: true,
   },
@@ -30,7 +28,6 @@ const initialMetrics: Metric[] = [
     baseline: 8,
     pos: 3.2,
     metaValue: 4,
-    metaLabel: "≤ 4 min",
     critico: true,
     lowerIsBetter: true,
   },
@@ -40,7 +37,6 @@ const initialMetrics: Metric[] = [
     baseline: 11,
     pos: 3,
     metaValue: 5,
-    metaLabel: "≤ 5",
     critico: true,
     lowerIsBetter: true,
   },
@@ -50,7 +46,6 @@ const initialMetrics: Metric[] = [
     baseline: 3.1,
     pos: 1.0,
     metaValue: 1.5,
-    metaLabel: "≤ 1,5 d",
     critico: false,
     lowerIsBetter: true,
   },
@@ -88,10 +83,19 @@ function EditableNumber({
 export default function GoNoGoPage() {
   const [metrics, setMetrics] = useState<Metric[]>(initialMetrics);
 
-  function update(index: number, field: "baseline" | "pos", value: number) {
+  function update(
+    index: number,
+    field: "baseline" | "pos" | "metaValue",
+    value: number
+  ) {
     setMetrics((prev) =>
       prev.map((m, i) => (i === index ? { ...m, [field]: value } : m))
     );
+  }
+
+  function metaLabel(m: Metric): string {
+    const dir = m.lowerIsBetter ? "≤" : "≥";
+    return `${dir} ${m.metaValue}${m.unit}`;
   }
 
   const allCriticalPassed = metrics
@@ -111,8 +115,8 @@ export default function GoNoGoPage() {
             Decidir Go / No-Go com números
           </h1>
           <p className="text-gray-600">
-            Edite os valores de <strong>Baseline</strong> e{" "}
-            <strong>Pós-piloto</strong> diretamente na tabela — delta e veredicto
+            Edite <strong>Baseline</strong>, <strong>Pós-piloto</strong> e{" "}
+            <strong>Meta</strong> diretamente na tabela — delta e veredicto
             atualizam em tempo real. Itens críticos (★) determinam o caminho.
           </p>
         </header>
@@ -166,8 +170,14 @@ export default function GoNoGoPage() {
                         />
                         <span className="text-xs text-gray-400 ml-1">{m.unit}</span>
                       </td>
-                      <td className="px-6 py-4 text-center text-gray-500">
-                        {m.metaLabel}
+                      <td className="px-4 py-3 text-center">
+                        <EditableNumber
+                          value={m.metaValue}
+                          onChange={(v) => update(i, "metaValue", v)}
+                        />
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {metaLabel(m)}
+                        </div>
                       </td>
                       <td className={`px-6 py-4 text-center font-medium ${deltaColor}`}>
                         {delta}
@@ -191,7 +201,7 @@ export default function GoNoGoPage() {
           </div>
           <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
             ★ Item crítico — falha em qualquer um destes resulta em No-Go
-            automático. · Clique nos campos numéricos para editar.
+            automático. · Baseline, Pós-piloto e Meta são todos editáveis.
           </div>
         </section>
 
