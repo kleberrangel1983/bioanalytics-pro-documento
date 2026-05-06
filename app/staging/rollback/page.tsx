@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { ChevronLeft, Play, CheckCircle2, XCircle, Loader2, Clock, AlertTriangle, Timer } from "lucide-react"
+import { ChevronLeft, Play, CheckCircle2, Loader2, Clock, AlertTriangle, Timer, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ROLLBACK_RUNBOOK } from "@/lib/staging/mock-data"
@@ -12,20 +12,20 @@ function sleep(ms: number) {
 }
 
 const INCIDENT_TYPE_LABELS = {
-  service_down: "Serviço Indisponível",
-  data_loss: "Perda de Dados",
-  auth_failure: "Falha de Autenticação",
-  performance: "Degradação de Performance",
+  service_down:  "Serviço Indisponível",
+  data_loss:     "Perda de Dados",
+  auth_failure:  "Falha de Autenticação",
+  performance:   "Degradação de Performance",
 }
 
 export default function RollbackPage() {
   const [steps, setSteps] = useState<RollbackStep[]>(() =>
     ROLLBACK_RUNBOOK.rollbackSteps.map((s) => ({ ...s }))
   )
-  const [isRunning, setIsRunning] = useState(false)
-  const [startedAt, setStartedAt] = useState<string | null>(null)
-  const [resolvedAt, setResolvedAt] = useState<string | null>(null)
-  const [totalMs, setTotalMs] = useState<number | null>(null)
+  const [isRunning, setIsRunning]     = useState(false)
+  const [startedAt, setStartedAt]     = useState<string | null>(null)
+  const [resolvedAt, setResolvedAt]   = useState<string | null>(null)
+  const [totalMs, setTotalMs]         = useState<number | null>(null)
 
   const updateStep = useCallback((order: number, partial: Partial<RollbackStep>) => {
     setSteps((prev) =>
@@ -45,10 +45,7 @@ export default function RollbackPage() {
       const stepStart = Date.now()
       updateStep(step.order, { status: "pending" })
       await sleep(200)
-
-      // simulate execution time per step
-      const duration = 600 + Math.random() * 1200
-      await sleep(duration)
+      await sleep(600 + Math.random() * 1200)
       updateStep(step.order, {
         status: "done",
         durationMs: Math.round(Date.now() - stepStart),
@@ -69,8 +66,8 @@ export default function RollbackPage() {
     setIsRunning(false)
   }, [])
 
-  const doneCount = steps.filter((s) => s.status === "done").length
-  const currentStep = steps.find((s) => s.status === "pending" && isRunning)
+  const doneCount    = steps.filter((s) => s.status === "done").length
+  const currentStep  = steps.find((s) => s.status === "pending" && isRunning)
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
@@ -82,30 +79,33 @@ export default function RollbackPage() {
           </a>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <h1 className="text-2xl font-bold text-foreground">
             Runbook de Incidente & Rollback
           </h1>
-          <p className="text-slate-500 text-sm">Semana 2 — Simulação controlada</p>
+          <p className="text-muted-foreground text-sm">Semana 2 — Simulação controlada</p>
         </div>
       </div>
 
       {/* incident card */}
-      <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-5 space-y-3">
+      <section className="rounded-lg border border-brand-gold/40 bg-brand-gold/10 p-5 space-y-3">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="text-amber-500 flex-shrink-0 mt-0.5" size={20} />
+          <AlertTriangle className="text-brand-gold flex-shrink-0 mt-0.5" size={20} />
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-amber-800 dark:text-amber-200">
+              <p className="font-semibold text-brand-gold">
                 {INCIDENT_TYPE_LABELS[ROLLBACK_RUNBOOK.type]}
               </p>
-              <Badge variant="outline" className="text-amber-700 border-amber-400 dark:text-amber-300 dark:border-amber-700 text-xs">
+              <Badge
+                variant="outline"
+                className="text-brand-gold-muted border-brand-gold/40 text-xs"
+              >
                 {ROLLBACK_RUNBOOK.id}
               </Badge>
             </div>
-            <p className="text-sm text-amber-700 dark:text-amber-300">
+            <p className="text-sm text-foreground/80">
               {ROLLBACK_RUNBOOK.description}
             </p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 font-mono">
+            <p className="text-xs text-muted-foreground font-mono">
               Simulado em: {new Date(ROLLBACK_RUNBOOK.triggeredAt).toLocaleString("pt-BR")}
             </p>
           </div>
@@ -115,17 +115,17 @@ export default function RollbackPage() {
       {/* SLA targets */}
       <section className="grid grid-cols-3 gap-4">
         {[
-          { label: "Detecção", target: "< 2 min", icon: AlertTriangle },
-          { label: "Primeiro resposta", target: "< 5 min", icon: Timer },
-          { label: "Rollback completo", target: "< 15 min", icon: CheckCircle2 },
+          { label: "Detecção",         target: "< 2 min",  icon: AlertTriangle  },
+          { label: "Primeira resposta", target: "< 5 min",  icon: Timer         },
+          { label: "Rollback completo", target: "< 15 min", icon: CheckCircle2  },
         ].map(({ label, target, icon: Icon }) => (
           <div
             key={label}
-            className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-center space-y-1"
+            className="rounded-lg border border-border bg-card p-4 text-center space-y-1"
           >
-            <Icon size={20} className="mx-auto text-slate-400" />
-            <p className="text-xs text-slate-500">{label}</p>
-            <p className="font-bold text-slate-800 dark:text-slate-200 font-mono">{target}</p>
+            <Icon size={20} className="mx-auto text-brand-teal" />
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="font-bold text-foreground font-mono">{target}</p>
           </div>
         ))}
       </section>
@@ -133,10 +133,10 @@ export default function RollbackPage() {
       {/* rollback steps */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+          <h2 className="text-base font-semibold text-foreground">
             Passos de Rollback
           </h2>
-          <span className="text-sm text-slate-500">{doneCount}/{steps.length} concluídos</span>
+          <span className="text-sm text-muted-foreground">{doneCount}/{steps.length} concluídos</span>
         </div>
 
         <div className="space-y-2">
@@ -147,28 +147,32 @@ export default function RollbackPage() {
                 key={step.order}
                 className={`rounded-lg border p-4 transition-colors ${
                   step.status === "done"
-                    ? "border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/30"
+                    ? "border-emerald-500/30 bg-emerald-500/10"
                     : isCurrentStep
-                    ? "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30"
-                    : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                    ? "border-accent/40 bg-accent/10"
+                    : "border-border bg-card"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
                     {step.order}
                   </span>
                   <div className="flex-1 space-y-1">
-                    <p className={`text-sm font-medium ${step.status === "done" ? "text-emerald-700 dark:text-emerald-300" : "text-slate-700 dark:text-slate-300"}`}>
+                    <p className={`text-sm font-medium ${
+                      step.status === "done" ? "text-emerald-400" : "text-foreground"
+                    }`}>
                       {step.action}
                     </p>
                     {step.command && (
-                      <code className="block text-xs font-mono bg-slate-900 dark:bg-slate-950 text-slate-300 px-3 py-2 rounded mt-1 overflow-x-auto">
+                      <code className="block text-xs font-mono bg-brand-navy border border-brand-navy-border text-brand-teal px-3 py-2 rounded mt-1 overflow-x-auto">
                         {step.command}
                       </code>
                     )}
                     {step.durationMs && step.status === "done" && (
-                      <p className="text-xs text-slate-400 font-mono">
-                        {step.durationMs < 1000 ? `${step.durationMs}ms` : `${(step.durationMs / 1000).toFixed(1)}s`}
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {step.durationMs < 1000
+                          ? `${step.durationMs}ms`
+                          : `${(step.durationMs / 1000).toFixed(1)}s`}
                       </p>
                     )}
                   </div>
@@ -176,9 +180,9 @@ export default function RollbackPage() {
                     {step.status === "done" ? (
                       <CheckCircle2 size={18} className="text-emerald-500" />
                     ) : isCurrentStep ? (
-                      <Loader2 size={18} className="text-blue-500 animate-spin" />
+                      <Loader2 size={18} className="text-accent animate-spin" />
                     ) : (
-                      <Clock size={18} className="text-slate-300" />
+                      <Clock size={18} className="text-muted-foreground" />
                     )}
                   </div>
                 </div>
@@ -190,7 +194,11 @@ export default function RollbackPage() {
 
       {/* actions */}
       <div className="flex gap-3">
-        <Button onClick={simulateRollback} disabled={isRunning} className="gap-2 bg-red-600 hover:bg-red-700 text-white">
+        <Button
+          onClick={simulateRollback}
+          disabled={isRunning}
+          className="gap-2 bg-destructive hover:bg-destructive/90 text-white"
+        >
           {isRunning ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
           {isRunning ? "Executando rollback…" : "Simular Incidente & Rollback"}
         </Button>
@@ -201,23 +209,23 @@ export default function RollbackPage() {
 
       {/* resolution evidence */}
       {resolvedAt && totalMs !== null && (
-        <section className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 p-4 space-y-2">
-          <p className="font-semibold text-emerald-800 dark:text-emerald-200">
-            ✓ Rollback concluído com sucesso
-          </p>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-emerald-700 dark:text-emerald-300">
+        <section className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-2">
+          <p className="font-semibold text-emerald-300">✓ Rollback concluído com sucesso</p>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-emerald-400">
             <span>Início da simulação:</span>
-            <span className="font-mono text-xs">{startedAt ? new Date(startedAt).toLocaleString("pt-BR") : "—"}</span>
+            <span className="font-mono text-xs">
+              {startedAt ? new Date(startedAt).toLocaleString("pt-BR") : "—"}
+            </span>
             <span>Resolução:</span>
             <span className="font-mono text-xs">{new Date(resolvedAt).toLocaleString("pt-BR")}</span>
             <span>Tempo total de resposta:</span>
             <span className="font-bold font-mono">{(totalMs / 1000).toFixed(1)}s</span>
             <span>SLA de rollback (&lt; 15 min):</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className={`font-semibold ${totalMs < 900000 ? "text-emerald-500" : "text-destructive"}`}>
               {totalMs < 900000 ? "✓ Dentro do SLA" : "✗ Fora do SLA"}
             </span>
           </div>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+          <p className="text-xs text-emerald-500 mt-2">
             Evidência: {steps.length} passos executados · Incidente {ROLLBACK_RUNBOOK.id} resolvido
           </p>
         </section>
