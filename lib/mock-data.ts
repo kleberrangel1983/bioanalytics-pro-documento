@@ -271,6 +271,10 @@ export function getPatientById(id: string): Patient | undefined {
   return MOCK_PATIENTS.find(p => p.id === id)
 }
 
+export function getSamplesByPatientId(patientId: string): Sample[] {
+  return MOCK_SAMPLES.filter(s => s.patientId === patientId)
+}
+
 export function getKPIs(): KPIMetric[] {
   const totalSamples = MOCK_SAMPLES.length
   const completedSamples = MOCK_SAMPLES.filter(s => s.status === 'completed').length

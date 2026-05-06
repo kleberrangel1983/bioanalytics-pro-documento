@@ -21,6 +21,7 @@ import {
   FlaskConical,
   LayoutDashboard,
   Settings,
+  Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -39,6 +40,7 @@ const NAV_GROUPS = [
     items: [
       { title: 'Amostras', href: '/samples', icon: FlaskConical },
       { title: 'Análises', href: '/analysis', icon: BarChart3 },
+      { title: 'Pacientes', href: '/patients', icon: Users },
     ],
   },
   {

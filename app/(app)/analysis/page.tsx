@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConcentrationChart } from '@/components/analysis/concentration-chart'
 import { ViabilityChart } from '@/components/analysis/viability-chart'
 import { AnalysisTable } from '@/components/analysis/analysis-table'
+import { PurityRadarChart } from '@/components/analysis/purity-radar-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MOCK_ANALYSES } from '@/lib/mock-data'
 import { ANALYSIS_TYPE_CONFIG } from '@/lib/constants'
@@ -48,6 +49,7 @@ export default function AnalysisPage() {
           <TabsTrigger value="summary">Resumo</TabsTrigger>
           <TabsTrigger value="concentration">Concentração</TabsTrigger>
           <TabsTrigger value="viability">Viabilidade</TabsTrigger>
+          <TabsTrigger value="composition">Composição</TabsTrigger>
           <TabsTrigger value="table">Tabela</TabsTrigger>
         </TabsList>
 
@@ -61,6 +63,10 @@ export default function AnalysisPage() {
 
         <TabsContent value="viability" className="mt-4">
           <ViabilityChart />
+        </TabsContent>
+
+        <TabsContent value="composition" className="mt-4">
+          <PurityRadarChart />
         </TabsContent>
 
         <TabsContent value="table" className="mt-4">
