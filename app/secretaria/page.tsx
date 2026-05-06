@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -82,6 +82,10 @@ export default function SecretariaPage() {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<FilterState>("todos")
   const [appointments, setAppointments] = useState<Appointment[]>(TODAY_APPOINTMENTS)
+  const [todayLabel, setTodayLabel] = useState("")
+  useEffect(() => {
+    setTodayLabel(new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }))
+  }, [])
 
   const filtered = appointments.filter((a) => {
     const matchSearch =
@@ -118,7 +122,7 @@ export default function SecretariaPage() {
             <div>
               <h1 className="text-lg font-semibold text-slate-900">Interface da Secretária</h1>
               <p className="text-sm text-slate-500">
-                {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+                {todayLabel}
               </p>
             </div>
           </div>
