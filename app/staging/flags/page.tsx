@@ -5,14 +5,12 @@ import {
   ChevronLeft,
   CheckCircle2,
   XCircle,
-  Zap,
-  AlertTriangle,
   Info,
-  Users,
   Globe,
   FlaskConical,
   LayoutDashboard,
   Server,
+  UserCircle2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +24,8 @@ import {
 } from "@/lib/feature-flags/flags"
 import type { FeatureFlag, Environment, FlagState } from "@/lib/feature-flags/types"
 import type { UserRole } from "@/lib/staging/types"
+import { useAuth } from "@/lib/auth/context"
+import { ROLE_LABELS, ROLE_COLORS } from "@/lib/auth/types"
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -232,9 +232,10 @@ function FlagCard({
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function FlagsPage() {
+  const { user } = useAuth()
   const [env, setEnv] = useState<Environment>("production")
-  const [previewRole, setPreviewRole] = useState<UserRole>("admin")
-  const [previewUserId, setPreviewUserId] = useState(SAMPLE_USERS.admin[0])
+  const [previewRole, setPreviewRole] = useState<UserRole>(user?.role ?? "admin")
+  const [previewUserId, setPreviewUserId] = useState(user?.id ?? SAMPLE_USERS.admin[0])
   const [categoryFilter, setCategoryFilter] = useState<FeatureFlag["category"] | "all">("all")
 
   const filteredFlags = useMemo(
@@ -273,6 +274,26 @@ export default function FlagsPage() {
 
       {/* env + preview controls */}
       <section className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4">
+        {/* logged-in user context banner */}
+        {user && (
+          <div className="flex items-center gap-2 rounded-md bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
+            <UserCircle2 size={15} className="text-slate-400 flex-shrink-0" />
+            <span className="text-slate-500">Sessão atual:</span>
+            <span className="font-medium text-slate-800 dark:text-slate-200">{user.name}</span>
+            <Badge className={`text-xs h-5 ${ROLE_COLORS[user.role]}`}>
+              {ROLE_LABELS[user.role]}
+            </Badge>
+            <span className="font-mono text-xs text-slate-400">{user.id}</span>
+            {previewRole !== user.role && (
+              <button
+                onClick={() => { setPreviewRole(user.role); setPreviewUserId(user.id) }}
+                className="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Restaurar minha sessão
+              </button>
+            )}
+          </div>
+        )}
         <div className="flex flex-wrap gap-6">
           {/* environment toggle */}
           <div className="space-y-1.5">

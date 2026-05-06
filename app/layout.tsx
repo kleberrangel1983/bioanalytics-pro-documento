@@ -2,13 +2,16 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { AuthProvider } from '@/lib/auth/context'
+import { AuthGuard } from '@/components/auth-guard'
+import { AppNav } from '@/components/app-nav'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'BioAnalytics Pro — Staging',
+  description: 'Plataforma de validação e homologação do BioAnalytics Pro',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -35,9 +38,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased">
-        {children}
+    <html lang="pt-BR">
+      <body className="font-sans antialiased bg-slate-50 dark:bg-slate-950">
+        <AuthProvider>
+          <AuthGuard>
+            <AppNav />
+            {children}
+          </AuthGuard>
+        </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
