@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/auth/context"
+import { isSessionValid } from "@/lib/auth/mock-users"
 
 const PUBLIC_PATHS = ["/login"]
 
@@ -13,16 +14,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   const isPublic = PUBLIC_PATHS.includes(pathname)
+  const isAuthed = !!session && isSessionValid(session)
 
   useEffect(() => {
     if (isLoading) return
-    if (!session && !isPublic) {
+    if (!isAuthed && !isPublic) {
       router.replace(`/login?from=${encodeURIComponent(pathname)}`)
     }
-    if (session && isPublic) {
+    if (isAuthed && isPublic) {
       router.replace("/")
     }
-  }, [isLoading, session, isPublic, router, pathname])
+  }, [isLoading, isAuthed, isPublic, router, pathname])
 
   if (isLoading) {
     return (
@@ -32,8 +34,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!session && !isPublic) return null
-  if (session && isPublic) return null
+  if (!isAuthed && !isPublic) return null
+  if (isAuthed && isPublic) return null
 
   return <>{children}</>
 }

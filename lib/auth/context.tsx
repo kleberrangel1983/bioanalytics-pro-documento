@@ -15,6 +15,17 @@ interface AuthContextValue extends AuthState {
   user: AuthUser | null
 }
 
+const AUTH_COOKIE = "bioanalytics_auth"
+const SESSION_TTL_SECONDS = 8 * 60 * 60 // 8h
+
+function setAuthCookie(token: string) {
+  document.cookie = `${AUTH_COOKIE}=${token}; path=/; max-age=${SESSION_TTL_SECONDS}; SameSite=Lax`
+}
+
+function clearAuthCookie() {
+  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -31,9 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return
         }
         localStorage.removeItem(SESSION_KEY)
+        clearAuthCookie()
       }
     } catch {
       localStorage.removeItem(SESSION_KEY)
+      clearAuthCookie()
     }
     setState({ session: null, isLoading: false })
   }, [])
@@ -44,12 +57,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const session = createSession(result.user)
     localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    setAuthCookie(session.token)
     setState({ session, isLoading: false })
     return { ok: true }
   }, [])
 
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY)
+    clearAuthCookie()
     setState({ session: null, isLoading: false })
   }, [])
 
