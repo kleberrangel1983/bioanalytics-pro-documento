@@ -62,14 +62,14 @@ export default function SamplesPage() {
                 Nova Amostra
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Nova Amostra</DialogTitle>
-            </DialogHeader>
-            <SampleForm onSuccess={() => setOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Cadastrar Nova Amostra</DialogTitle>
+              </DialogHeader>
+              <SampleForm onSuccess={() => setOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
 
       <SampleFilters
         search={search}
