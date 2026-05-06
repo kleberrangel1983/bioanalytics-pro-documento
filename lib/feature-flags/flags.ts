@@ -120,12 +120,18 @@ export function evaluateFlag(
     return { flagId: flag.id, userId, role, environment: env, enabled: false, reason: "flag_disabled", rolloutPct: 0 }
   }
 
-  // role override takes precedence
+  // role override takes precedence over everything else
   if (state.roleOverrides[role] === true) {
     return { flagId: flag.id, userId, role, environment: env, enabled: true, reason: "role_override_on", rolloutPct: state.rolloutPct }
   }
   if (state.roleOverrides[role] === false) {
     return { flagId: flag.id, userId, role, environment: env, enabled: false, reason: "role_override_off", rolloutPct: state.rolloutPct }
+  }
+
+  // enforce allowedRoles targeting rules before rollout evaluation
+  const roleRule = flag.targeting.find((r): r is import("./types").RoleRule => r.type === "roles")
+  if (roleRule && !roleRule.allowedRoles.includes(role)) {
+    return { flagId: flag.id, userId, role, environment: env, enabled: false, reason: "role_not_targeted", rolloutPct: state.rolloutPct }
   }
 
   // deterministic rollout based on userId hash
@@ -170,6 +176,7 @@ export const CATEGORY_COLORS: Record<FeatureFlag["category"], string> = {
 
 export const REASON_LABELS: Record<FlagEvaluationResult["reason"], string> = {
   flag_disabled: "Flag desabilitada globalmente",
+  role_not_targeted: "Perfil não incluído no targeting da flag",
   role_override_on: "Override de perfil: ativado",
   role_override_off: "Override de perfil: desativado",
   rollout_in: "Incluído no rollout",

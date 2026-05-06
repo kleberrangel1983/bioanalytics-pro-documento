@@ -44,7 +44,7 @@ export interface FlagEvaluationResult {
   role: UserRole
   environment: Environment
   enabled: boolean
-  reason: "flag_disabled" | "role_override_on" | "role_override_off" | "rollout_in" | "rollout_out"
+  reason: "flag_disabled" | "role_not_targeted" | "role_override_on" | "role_override_off" | "rollout_in" | "rollout_out"
   rolloutPct: number
 }
 
