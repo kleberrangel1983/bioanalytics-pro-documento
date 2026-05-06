@@ -19,7 +19,8 @@ global.IntersectionObserver = class IntersectionObserver {
   readonly thresholds = []
 }
 
-// matchMedia is not available in jsdom; required by Embla Carousel breakpoint detection.
+// matchMedia is not available in jsdom; required by Embla Carousel, next-themes, useIsMobile.
+// addListener/removeListener are the legacy API used by next-themes.
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   configurable: true,
@@ -27,6 +28,8 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
