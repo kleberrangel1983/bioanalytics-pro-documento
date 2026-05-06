@@ -153,9 +153,10 @@ export function evaluateFlag(
 export function evaluateAll(
   userId: string,
   role: UserRole,
-  env: Environment
+  env: Environment,
+  flags: FeatureFlag[] = ALL_FLAGS
 ): FlagEvaluationResult[] {
-  return ALL_FLAGS.map((flag) => evaluateFlag(flag, userId, role, env))
+  return flags.map((flag) => evaluateFlag(flag, userId, role, env))
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
