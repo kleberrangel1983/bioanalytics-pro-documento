@@ -7,6 +7,8 @@ import type {
   UserRole,
 } from "./types"
 
+export const STAGING_WEEK = "Semana 2"
+
 // ─── Mock patient used throughout the flow (no real PII) ─────────────────────
 export const MOCK_PATIENT = {
   id: "PAT-STAGING-001",
@@ -160,10 +162,19 @@ export const FLOW_STEP_DEFINITIONS: Record<
   },
 }
 
+// ─── Failure scenario messages ────────────────────────────────────────────────
+export const FAILURE_MESSAGES: Record<FlowStepResult["step"], string[]> = {
+  captacao:    ["Timeout ao salvar no banco de staging (5002ms)", "Falha na fila de e-mail: SMTP connection refused"],
+  triagem:     ["Score de risco não calculado: modelo indisponível", "Status do paciente não atualizado: lock de concorrência"],
+  agendamento: ["Nenhum slot disponível para a data solicitada", "Conflito de agenda: médico já possui consulta no horário"],
+  confirmacao: ["Token de confirmação expirado (TTL: 300s)", "Slot realocado durante janela de confirmação"],
+  log:         ["Evento ausente no log de auditoria: confirmacao", "Tentativa de edição de log não rejeitada (vulnerabilidade)"],
+}
+
 // ─── Rollback runbook ─────────────────────────────────────────────────────────
 export const ROLLBACK_RUNBOOK: IncidentRecord = {
   id: "INC-STAGING-2026-W2",
-  triggeredAt: "2026-05-06T14:30:00-03:00",
+  triggeredAt: new Date().toISOString(),
   type: "service_down",
   description:
     "Simulação: falha no serviço de agendamento — API retorna 503 por mais de 2 minutos",
