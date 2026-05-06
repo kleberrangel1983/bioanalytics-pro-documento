@@ -105,11 +105,14 @@ export default function CargaPage() {
     timerRef.current = null
     setReport((prev) => {
       if (!prev || prev.status !== "running") return prev
-      const summaries = buildEndpointSummaries(snapshotsRef.current, prev.scenario)
-      const breaches = computeSlaBreaches(snapshotsRef.current, summaries, prev.scenario)
-      const avgP95 = snapshotsRef.current.length
-        ? snapshotsRef.current.reduce((s, x) => s + x.p95Ms, 0) / snapshotsRef.current.length
-        : 0
+      const snaps = snapshotsRef.current
+      const summaries = buildEndpointSummaries(snaps, prev.scenario)
+      const breaches = computeSlaBreaches(snaps, summaries, prev.scenario)
+      const count = snaps.length || 1
+      const avgP95 = snaps.reduce((s, x) => s + x.p95Ms, 0) / count
+      const totalReqs = Math.round(snaps.reduce((s, x) => s + x.rps * SIM_SECONDS_PER_TICK, 0))
+      const overallErrPct = snaps.reduce((s, x) => s + x.errorRatePct, 0) / count
+      const totalErrors = Math.round(totalReqs * overallErrPct / 100)
       return {
         ...prev,
         status: "aborted",
@@ -117,12 +120,11 @@ export default function CargaPage() {
         endpointSummaries: summaries,
         slaBreaches: breaches,
         avgP95Ms: Math.round(avgP95),
-        totalRequests: Math.round(snapshotsRef.current.reduce((s, x) => s + x.rps * SIM_SECONDS_PER_TICK, 0)),
-        totalErrors: 0,
-        overallErrorPct:
-          snapshotsRef.current.reduce((s, x) => s + x.errorRatePct, 0) / (snapshotsRef.current.length || 1),
-        peakRps: Math.max(...snapshotsRef.current.map((x) => x.rps), 0),
-        peakUsers: Math.max(...snapshotsRef.current.map((x) => x.activeUsers), 0),
+        totalRequests: totalReqs,
+        totalErrors,
+        overallErrorPct: Math.round(overallErrPct * 10) / 10,
+        peakRps: snaps.length ? Math.max(...snaps.map((x) => x.rps)) : 0,
+        peakUsers: snaps.length ? Math.max(...snaps.map((x) => x.activeUsers)) : 0,
       }
     })
   }, [])

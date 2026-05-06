@@ -179,6 +179,7 @@ export function buildEndpointSummaries(
   snapshots: MetricSnapshot[],
   scenario: LoadScenario
 ): EndpointSummary[] {
+  if (snapshots.length === 0) return []
   const totalRequests = snapshots.reduce((s, snap) => s + snap.rps * 2, 0)
 
   return scenario.endpoints.map((ep) => {
@@ -208,6 +209,7 @@ export function computeSlaBreaches(
   endpointSummaries: EndpointSummary[],
   scenario: LoadScenario
 ): string[] {
+  if (snapshots.length === 0) return []
   const breaches: string[] = []
   const avgP95 = snapshots.reduce((s, snap) => s + snap.p95Ms, 0) / snapshots.length
   const maxErrorPct = Math.max(...snapshots.map((s) => s.errorRatePct))
