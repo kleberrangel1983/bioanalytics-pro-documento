@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Lock,
   FlaskConical,
+  Settings2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -178,6 +179,14 @@ const MODULES = [
     status: "Aberto",
     statusVariant: "secondary" as const,
   },
+  {
+    href: "/admin",
+    icon: <Settings2 className="h-6 w-6" />,
+    title: "Painel de Admin",
+    description: "Gerenciar usuários, roles e feature flags via UI",
+    status: "Acesso restrito",
+    statusVariant: "destructive" as const,
+  },
 ]
 
 function statusCounts(items: CheckItem[]) {
@@ -241,7 +250,7 @@ export default function DashboardPage() {
         {/* Module cards */}
         <section>
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Módulos — Semanas 1 &amp; 2
+            Módulos — Semanas 1, 2 &amp; 3
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {MODULES.map((mod) => (

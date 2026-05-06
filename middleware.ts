@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const PROTECTED_ROUTES = ["/auditoria"]
-const AUTHORIZED_ROLES = ["admin"]
+const ADMIN_ONLY  = ["/auditoria", "/admin"]
+const ADMIN_ROLES = ["admin"]
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (ADMIN_ONLY.some((route) => pathname.startsWith(route))) {
     const role = request.cookies.get("bioanalytics-role")?.value
 
-    if (!role || !AUTHORIZED_ROLES.includes(role)) {
+    if (!role || !ADMIN_ROLES.includes(role)) {
       const url = request.nextUrl.clone()
       url.pathname = "/acesso-negado"
       url.searchParams.set("from", pathname)
@@ -22,5 +22,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/auditoria/:path*"],
+  matcher: ["/auditoria/:path*", "/admin/:path*"],
 }
