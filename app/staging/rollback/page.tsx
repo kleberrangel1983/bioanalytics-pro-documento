@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { ChevronLeft, Play, CheckCircle2, Loader2, Clock, AlertTriangle, Timer, XCircle } from "lucide-react"
+import { ChevronLeft, Play, CheckCircle2, Loader2, Clock, AlertTriangle, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ROLLBACK_RUNBOOK } from "@/lib/staging/mock-data"
