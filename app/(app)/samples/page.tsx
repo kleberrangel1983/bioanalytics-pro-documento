@@ -70,6 +70,7 @@ export default function SamplesPage() {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
 
       <SampleFilters
         search={search}
