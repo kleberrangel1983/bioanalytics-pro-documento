@@ -284,6 +284,9 @@ export default function StagingPage() {
         <Button variant="ghost" asChild>
           <a href="/staging/observabilidade">Observabilidade →</a>
         </Button>
+        <Button variant="ghost" asChild>
+          <a href="/staging/lgpd">LGPD →</a>
+        </Button>
       </div>
 
       {/* ── evidence footer ── */}
