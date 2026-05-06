@@ -1,59 +1,81 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase-server"
+import { updateAppointmentStatus, deleteAppointment } from "@/lib/services/appointments"
+import { writeAudit } from "@/lib/services/audit"
 import { AppointmentStatus } from "@/lib/database.types"
 
-const HML_FALLBACK = !process.env.NEXT_PUBLIC_SUPABASE_URL
+const isConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 type Params = { params: Promise<{ id: string }> }
 
 // ─── PATCH /api/appointments/[id] ────────────────────────────────────────────
-// Body: { status, notes }
 export async function PATCH(request: NextRequest, { params }: Params) {
   const { id } = await params
   const body = await request.json()
-  const { status, notes } = body as { status?: AppointmentStatus; notes?: string }
+  const { status, notes, updated_by } = body as {
+    status?: AppointmentStatus
+    notes?: string
+    updated_by?: string
+  }
 
   if (!status) {
     return NextResponse.json({ error: "Campo 'status' é obrigatório" }, { status: 422 })
   }
 
-  const VALID_STATUSES: AppointmentStatus[] = ["aguardando", "confirmado", "atendido", "cancelado"]
-  if (!VALID_STATUSES.includes(status)) {
+  const VALID: AppointmentStatus[] = ["aguardando", "confirmado", "atendido", "cancelado"]
+  if (!VALID.includes(status)) {
     return NextResponse.json({ error: `Status inválido: ${status}` }, { status: 422 })
   }
 
-  if (HML_FALLBACK) {
+  if (!isConfigured) {
     return NextResponse.json({ id, status, notes: notes ?? null, updated_at: new Date().toISOString() })
   }
 
-  const supabase = await createClient()
-  const update: Record<string, unknown> = { status }
-  if (notes !== undefined) update.notes = notes
+  try {
+    const data = await updateAppointmentStatus(id, status, notes)
 
-  const { data, error } = await supabase
-    .from("appointments")
-    .update(update)
-    .eq("id", id)
-    .select()
-    .single()
+    await writeAudit({
+      userEmail: updated_by ?? "sistema",
+      userRole: "secretaria",
+      action: `${STATUS_ACTION[status]}`,
+      resource: `Agendamento ${id}`,
+      ip: request.headers.get("x-forwarded-for") ?? "unknown",
+      severity: status === "cancelado" ? "warning" : "info",
+      details: notes,
+    })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (!data) return NextResponse.json({ error: "Agendamento não encontrado" }, { status: 404 })
-
-  return NextResponse.json(data)
+    return NextResponse.json(data)
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  }
 }
 
 // ─── DELETE /api/appointments/[id] ───────────────────────────────────────────
-export async function DELETE(_request: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   const { id } = await params
 
-  if (HML_FALLBACK) {
+  if (!isConfigured) return NextResponse.json({ deleted: id })
+
+  try {
+    await deleteAppointment(id)
+
+    await writeAudit({
+      userEmail: "sistema",
+      userRole: "admin",
+      action: "DELETAR_AGENDAMENTO",
+      resource: `Agendamento ${id}`,
+      ip: request.headers.get("x-forwarded-for") ?? "unknown",
+      severity: "warning",
+    })
+
     return NextResponse.json({ deleted: id })
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
+}
 
-  const supabase = await createClient()
-  const { error } = await supabase.from("appointments").delete().eq("id", id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ deleted: id })
+const STATUS_ACTION: Record<AppointmentStatus, string> = {
+  confirmado: "CONFIRMAR_AGENDAMENTO",
+  cancelado:  "CANCELAR_AGENDAMENTO",
+  atendido:   "REGISTRAR_ATENDIMENTO",
+  aguardando: "REABRIR_AGENDAMENTO",
 }

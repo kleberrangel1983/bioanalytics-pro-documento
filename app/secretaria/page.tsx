@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase"
 import {
   ArrowLeft,
   Search,
@@ -73,9 +74,11 @@ function timeOf(isoStr: string) {
 export default function SecretariaPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
+  const [realtimeActive, setRealtimeActive] = useState(false)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<FilterState>("todos")
   const [todayLabel, setTodayLabel] = useState("")
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   useEffect(() => {
     setTodayLabel(new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }))
@@ -94,6 +97,26 @@ export default function SecretariaPage() {
   }, [])
 
   useEffect(() => { fetchAppointments() }, [fetchAppointments])
+
+  // Supabase Realtime — subscribe to appointment changes
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel("appointments-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        () => { fetchAppointments() },
+      )
+      .subscribe((status) => {
+        setRealtimeActive(status === "SUBSCRIBED")
+      })
+
+    channelRef.current = channel
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchAppointments])
 
   async function changeStatus(id: string, status: AppointmentStatus) {
     // Optimistic update
@@ -140,6 +163,12 @@ export default function SecretariaPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {realtimeActive && (
+              <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                Ao vivo
+              </span>
+            )}
             <button
               onClick={fetchAppointments}
               disabled={loading}
