@@ -100,6 +100,7 @@ function StarRating({
 
 export default function UATPage() {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState<FeedbackForm>({
     name: "",
     role: "",
@@ -118,10 +119,28 @@ export default function UATPage() {
   const totalErrors = SESSION_LOGS.reduce((acc, s) => acc + s.errors, 0)
   const avgDuration = "2m 43s"
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name || !form.role || !form.module || !form.rating) return
-    setSubmitted(true)
+    setSubmitting(true)
+    try {
+      await fetch("/api/uat/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenario_id: form.module.toLowerCase().replace(/\s+/g, "-"),
+          scenario_title: form.module,
+          tester_name: form.name,
+          tester_role: form.role,
+          rating: form.rating,
+          notes: form.comment || undefined,
+          is_blocker: form.blocker,
+        }),
+      })
+    } finally {
+      setSubmitting(false)
+      setSubmitted(true)
+    }
   }
 
   return (
@@ -342,10 +361,11 @@ export default function UATPage() {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white py-2.5 text-sm font-medium transition-colors shadow-sm"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2.5 text-sm font-medium transition-colors shadow-sm"
                 >
                   <Send className="h-4 w-4" />
-                  Enviar feedback
+                  {submitting ? "Enviando…" : "Enviar feedback"}
                 </button>
               </form>
             )}

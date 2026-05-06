@@ -30,54 +30,6 @@ interface CheckItem {
 
 const CHECKLIST: CheckItem[] = [
   {
-    id: "sec-flow",
-    label: "Fluxo completo da interface da secretária validado",
-    owner: "Equipe Front-end",
-    deadline: "2026-05-09",
-    status: "pending",
-    critical: true,
-  },
-  {
-    id: "wa-homolog",
-    label: "Integração WhatsApp aprovada em homologação (mensagens enviadas e recebidas)",
-    owner: "Equipe Integração",
-    deadline: "2026-05-10",
-    status: "pending",
-    critical: true,
-  },
-  {
-    id: "audit-panel",
-    label: "Painel de auditoria acessível apenas por perfil autorizado",
-    owner: "Equipe Segurança",
-    deadline: "2026-05-09",
-    status: "pending",
-    critical: true,
-  },
-  {
-    id: "rbac",
-    label: "Controle de acesso por papel (RBAC) implementado e testado",
-    owner: "Equipe Back-end",
-    deadline: "2026-05-11",
-    status: "pending",
-    critical: true,
-  },
-  {
-    id: "error-handling",
-    label: "Tratamento de erros críticos documentado (WhatsApp timeout, falha de envio)",
-    owner: "Equipe Integração",
-    deadline: "2026-05-12",
-    status: "pending",
-    critical: true,
-  },
-  {
-    id: "data-retention",
-    label: "Política de retenção de dados de auditoria definida",
-    owner: "Equipe Segurança",
-    deadline: "2026-05-12",
-    status: "pending",
-    critical: false,
-  },
-  {
     id: "scope-freeze",
     label: "Escopo congelado — nenhuma nova feature até fechamento das pendências",
     owner: "Tech Lead",
@@ -86,10 +38,90 @@ const CHECKLIST: CheckItem[] = [
     critical: true,
   },
   {
+    id: "sec-flow",
+    label: "Fluxo completo da interface da secretária com Realtime (Supabase)",
+    owner: "Equipe Front-end",
+    deadline: "2026-05-09",
+    status: "done",
+    critical: true,
+  },
+  {
+    id: "wa-homolog",
+    label: "Webhook WhatsApp com HMAC-SHA256 + rate limiter 75 msg/s",
+    owner: "Equipe Integração",
+    deadline: "2026-05-10",
+    status: "done",
+    critical: true,
+  },
+  {
+    id: "audit-panel",
+    label: "Painel de auditoria acessível apenas por perfil autorizado (admin)",
+    owner: "Equipe Segurança",
+    deadline: "2026-05-09",
+    status: "done",
+    critical: true,
+  },
+  {
+    id: "rbac",
+    label: "RBAC via middleware edge + server component (defense-in-depth)",
+    owner: "Equipe Back-end",
+    deadline: "2026-05-11",
+    status: "done",
+    critical: true,
+  },
+  {
+    id: "supabase-layer",
+    label: "Camada de serviços Supabase: appointments, patients, audit, whatsapp",
+    owner: "Equipe Back-end",
+    deadline: "2026-05-11",
+    status: "done",
+    critical: true,
+  },
+  {
+    id: "uat",
+    label: "Módulo UAT com API de feedback persistida (Supabase / mock)",
+    owner: "Equipe QA",
+    deadline: "2026-05-12",
+    status: "done",
+    critical: false,
+  },
+  {
+    id: "wa-outbound",
+    label: "Envio automático de confirmação WhatsApp no agendamento",
+    owner: "Equipe Integração",
+    deadline: "2026-05-12",
+    status: "done",
+    critical: false,
+  },
+  {
+    id: "error-handling",
+    label: "Tratamento de erros críticos documentado (WhatsApp timeout, falha de envio)",
+    owner: "Equipe Integração",
+    deadline: "2026-05-13",
+    status: "pending",
+    critical: true,
+  },
+  {
+    id: "env-vars",
+    label: "Variáveis de ambiente configuradas na Vercel e migration aplicada no Supabase",
+    owner: "DevOps",
+    deadline: "2026-05-13",
+    status: "pending",
+    critical: true,
+  },
+  {
+    id: "data-retention",
+    label: "Política de retenção de dados de auditoria definida",
+    owner: "Equipe Segurança",
+    deadline: "2026-05-14",
+    status: "pending",
+    critical: false,
+  },
+  {
     id: "stakeholder",
-    label: "Critérios de pronto validados com stakeholder",
+    label: "Critérios de pronto validados com stakeholder — UAT sign-off",
     owner: "PM",
-    deadline: "2026-05-07",
+    deadline: "2026-05-14",
     status: "pending",
     critical: false,
   },
@@ -118,23 +150,23 @@ const MODULES = [
     href: "/secretaria",
     icon: <Users className="h-6 w-6" />,
     title: "Interface da Secretária",
-    description: "Agendamentos, busca de pacientes e gestão de atendimentos",
-    status: "Em desenvolvimento",
+    description: "Agendamentos com Realtime, busca e gestão de atendimentos",
+    status: "Ao vivo",
     statusVariant: "secondary" as const,
   },
   {
     href: "/whatsapp-homologacao",
     icon: <MessageSquare className="h-6 w-6" />,
     title: "WhatsApp — Homologação",
-    description: "Painel de testes e validação da integração WhatsApp",
-    status: "Em homologação",
+    description: "Webhook HMAC, rate limiter e confirmação automática",
+    status: "Integrado",
     statusVariant: "outline" as const,
   },
   {
     href: "/auditoria",
     icon: <Shield className="h-6 w-6" />,
     title: "Painel de Auditoria",
-    description: "Registro de ações por perfil autorizado",
+    description: "Registro de ações por perfil autorizado (admin only)",
     status: "Acesso restrito",
     statusVariant: "destructive" as const,
   },
@@ -142,7 +174,7 @@ const MODULES = [
     href: "/uat",
     icon: <FlaskConical className="h-6 w-6" />,
     title: "UAT — Usuários Piloto",
-    description: "Formulários de feedback e rastreamento de sessão",
+    description: "Feedback persistido via API + rastreamento de sessão",
     status: "Aberto",
     statusVariant: "secondary" as const,
   },
@@ -177,7 +209,7 @@ export default function DashboardPage() {
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">BioAnalytics Pro</h1>
-            <p className="text-sm text-slate-500">Semana 1 — Fechar o básico que reduz risco</p>
+            <p className="text-sm text-slate-500">Semana 2 — Integração Supabase + WhatsApp real</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-slate-500">
@@ -209,7 +241,7 @@ export default function DashboardPage() {
         {/* Module cards */}
         <section>
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Módulos da Semana 1
+            Módulos — Semanas 1 &amp; 2
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {MODULES.map((mod) => (

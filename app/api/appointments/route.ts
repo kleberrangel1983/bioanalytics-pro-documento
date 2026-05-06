@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { listAppointmentsByDate, createAppointment } from "@/lib/services/appointments"
 import { writeAudit } from "@/lib/services/audit"
+import { sendAppointmentConfirmation } from "@/lib/services/whatsapp"
 import { AppointmentStatus } from "@/lib/database.types"
 
 const isConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
@@ -48,6 +49,19 @@ export async function POST(request: NextRequest) {
       ip: request.headers.get("x-forwarded-for") ?? "unknown",
       severity: "info",
     })
+
+    // Fire-and-forget: send WhatsApp confirmation to patient
+    if (data.patients?.phone) {
+      const d = new Date(scheduled_at)
+      sendAppointmentConfirmation({
+        to: data.patients.phone.replace(/\D/g, ""),
+        patientName: data.patients.name,
+        date: d.toLocaleDateString("pt-BR"),
+        time: d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        type,
+        callerEmail: created_by,
+      })
+    }
 
     return NextResponse.json(data, { status: 201 })
   } catch (err) {
