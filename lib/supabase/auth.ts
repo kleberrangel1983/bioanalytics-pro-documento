@@ -7,10 +7,10 @@ export interface AuthUser {
   name: string
 }
 
-export function extractRole(metadata: Record<string, unknown> | null): UserRole {
+export function extractRole(metadata: Record<string, unknown> | null): UserRole | null {
   const role = metadata?.role
   const valid: UserRole[] = ["admin", "medico", "secretaria", "paciente", "suporte"]
-  return valid.includes(role as UserRole) ? (role as UserRole) : "paciente"
+  return valid.includes(role as UserRole) ? (role as UserRole) : null
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {

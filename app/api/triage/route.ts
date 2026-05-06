@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { requireAuth } from "@/lib/supabase/require-auth"
 import { z } from "zod"
 
 const TriageSchema = z.object({
@@ -8,10 +9,17 @@ const TriageSchema = z.object({
   risk_score:     z.number().int().min(0).max(100),
   symptoms:       z.array(z.string().min(1)).min(1),
   notes:          z.string().max(2000).optional(),
-  triaged_by:     z.string().uuid(),
 })
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+  const { userId, role } = auth.ctx
+
+  if (role !== "medico" && role !== "admin") {
+    return NextResponse.json({ error: "Forbidden: only medico or admin may triage" }, { status: 403 })
+  }
+
   const body = await request.json().catch(() => null)
   const parsed = TriageSchema.safeParse(body)
   if (!parsed.success) {
@@ -21,7 +29,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("triage_records")
-    .insert(parsed.data)
+    .insert({ ...parsed.data, triaged_by: userId })
     .select()
     .single()
 
@@ -29,10 +37,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // audit log — failure here means audit integrity is broken; roll back via 500
+  // Audit log — actor derived from authenticated session, never from request body
   const { error: auditError } = await supabase.from("audit_logs").insert({
-    actor_id:      parsed.data.triaged_by,
-    actor_role:    "medico",
+    actor_id:      userId,
+    actor_role:    role,
     action:        "triage.create",
     resource_type: "triage_record",
     resource_id:   data.id,
@@ -40,7 +48,6 @@ export async function POST(request: Request) {
   })
 
   if (auditError) {
-    // triage was created but audit failed — surface as 500 so caller can retry
     return NextResponse.json(
       { error: "Triage created but audit log failed", detail: auditError.message },
       { status: 500 }

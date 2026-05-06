@@ -5,11 +5,14 @@ import type { Database } from "./types"
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  // Skip auth enforcement when Supabase is not configured (e.g. Vercel preview)
+  // Fail-closed: if Supabase is not configured, deny all requests rather than allow
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseKey) {
-    return response
+    return NextResponse.json(
+      { error: "Service misconfigured: missing Supabase credentials" },
+      { status: 503 }
+    )
   }
 
   const supabase = createServerClient<Database>(
