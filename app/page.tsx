@@ -8,6 +8,7 @@ import {
   GitBranch,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { STAGING_WEEK } from "@/lib/staging/mock-data"
 
 const STAGING_CARDS = [
   {
@@ -70,7 +71,7 @@ export default function HomePage() {
         {/* environment badge */}
         <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-brand-gold border border-brand-gold/40 bg-brand-gold/10 rounded-full px-4 py-1.5">
           <GitBranch size={12} />
-          Ambiente de Homologação — Semana 2
+          Ambiente de Homologação — {STAGING_WEEK}
         </div>
 
         {/* staging cards */}
@@ -108,7 +109,7 @@ export default function HomePage() {
         <Button asChild size="lg" className="gap-2 mt-2">
           <Link href="/staging">
             <Activity size={16} />
-            Iniciar Validação Semana 2
+            Iniciar Validação {STAGING_WEEK}
           </Link>
         </Button>
       </section>

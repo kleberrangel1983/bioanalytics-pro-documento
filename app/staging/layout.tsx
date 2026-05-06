@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import { BrandLogo } from "@/components/brand-logo"
+import { STAGING_WEEK } from "@/lib/staging/mock-data"
 
 export const metadata: Metadata = {
-  title: "Homologação — Semana 2 | BioAnalytics Pro",
+  title: `Homologação — ${STAGING_WEEK} | BioAnalytics Pro`,
   description: "Validação de fluxo ponta-a-ponta em ambiente de staging",
 }
 

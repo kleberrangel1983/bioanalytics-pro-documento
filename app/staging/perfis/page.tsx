@@ -1,39 +1,36 @@
-"use client"
-
-import { useState } from "react"
 import { CheckCircle2, XCircle, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROLE_PERMISSIONS } from "@/lib/staging/mock-data"
 import type { UserRole, Permission } from "@/lib/staging/types"
 
 const ROLES: { key: UserRole; label: string; className: string }[] = [
-  { key: "admin",     label: "Admin",      className: "bg-brand-gold/20 text-brand-gold border border-brand-gold/30" },
-  { key: "medico",    label: "Médico",     className: "bg-accent/20 text-accent border border-accent/30" },
-  { key: "secretaria",label: "Secretária", className: "bg-brand-teal-dark/40 text-brand-teal border border-brand-teal/30" },
-  { key: "paciente",  label: "Paciente",   className: "bg-muted text-muted-foreground border border-border" },
-  { key: "suporte",   label: "Suporte",    className: "bg-brand-gold-muted/20 text-brand-gold-muted border border-brand-gold-muted/30" },
+  { key: "admin",      label: "Admin",      className: "bg-brand-gold/20 text-brand-gold border border-brand-gold/30" },
+  { key: "medico",     label: "Médico",     className: "bg-accent/20 text-accent border border-accent/30" },
+  { key: "secretaria", label: "Secretária", className: "bg-brand-teal-dark/40 text-brand-teal border border-brand-teal/30" },
+  { key: "paciente",   label: "Paciente",   className: "bg-muted text-muted-foreground border border-border" },
+  { key: "suporte",    label: "Suporte",    className: "bg-brand-gold-muted/20 text-brand-gold-muted border border-brand-gold-muted/30" },
 ]
 
 const PERMISSION_LABELS: Record<Permission, { label: string; category: string }> = {
-  view_patients:         { label: "Ver pacientes",               category: "Pacientes" },
-  edit_patients:         { label: "Editar pacientes",            category: "Pacientes" },
-  triage_patient:        { label: "Triar paciente",              category: "Pacientes" },
-  create_appointment:    { label: "Criar agendamento",           category: "Agenda"    },
-  cancel_appointment:    { label: "Cancelar agendamento",        category: "Agenda"    },
-  confirm_appointment:   { label: "Confirmar agendamento",       category: "Agenda"    },
-  view_own_appointments: { label: "Ver próprios agendamentos",   category: "Agenda"    },
-  view_logs:             { label: "Ver logs de auditoria",       category: "Sistema"   },
-  export_data:           { label: "Exportar dados",              category: "Sistema"   },
-  manage_users:          { label: "Gerenciar usuários",          category: "Sistema"   },
-  view_reports:          { label: "Ver relatórios",              category: "Sistema"   },
+  view_patients:         { label: "Ver pacientes",             category: "Pacientes" },
+  edit_patients:         { label: "Editar pacientes",          category: "Pacientes" },
+  triage_patient:        { label: "Triar paciente",            category: "Pacientes" },
+  create_appointment:    { label: "Criar agendamento",         category: "Agenda"    },
+  cancel_appointment:    { label: "Cancelar agendamento",      category: "Agenda"    },
+  confirm_appointment:   { label: "Confirmar agendamento",     category: "Agenda"    },
+  view_own_appointments: { label: "Ver próprios agendamentos", category: "Agenda"    },
+  view_logs:             { label: "Ver logs de auditoria",     category: "Sistema"   },
+  export_data:           { label: "Exportar dados",            category: "Sistema"   },
+  manage_users:          { label: "Gerenciar usuários",        category: "Sistema"   },
+  view_reports:          { label: "Ver relatórios",            category: "Sistema"   },
 }
 
 const CATEGORIES = ["Pacientes", "Agenda", "Sistema"]
 
 export default function PerfilPage() {
-  const [testedAt] = useState(() => new Date().toLocaleString("pt-BR"))
   const permissions = Object.keys(ROLE_PERMISSIONS.admin) as Permission[]
   const totalCells = ROLES.length * permissions.length
+  const testedAt = new Date().toLocaleString("pt-BR")
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">

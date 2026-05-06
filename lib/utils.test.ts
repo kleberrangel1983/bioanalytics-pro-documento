@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest"
-import { cn } from "./utils"
+import { describe, it, expect, vi } from "vitest"
+import { cn, sleep } from "./utils"
 
 describe("cn()", () => {
   it("retorna uma string vazia quando não recebe argumentos", () => {
@@ -36,5 +36,15 @@ describe("cn()", () => {
 
   it("mescla corretamente classes de padding com shorthand e longhand", () => {
     expect(cn("p-4", "px-2")).toBe("p-4 px-2")
+  })
+})
+
+describe("sleep()", () => {
+  it("resolve após o tempo especificado", async () => {
+    vi.useFakeTimers()
+    const promise = sleep(500)
+    vi.advanceTimersByTime(500)
+    await expect(promise).resolves.toBeUndefined()
+    vi.useRealTimers()
   })
 })

@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import {
   Accordion,
   AccordionContent,
@@ -17,17 +19,16 @@ import {
 import {
   createInitialReport,
   FLOW_STEP_DEFINITIONS,
+  FAILURE_MESSAGES,
   MOCK_PATIENT,
   MOCK_DOCTOR,
   MOCK_APPOINTMENT,
+  STAGING_WEEK,
 } from "@/lib/staging/mock-data"
-import type { StagingRunReport, FlowStepResult, ProfileTestResult, StepStatus } from "@/lib/staging/types"
+import { sleep } from "@/lib/utils"
+import type { StagingRunReport, FlowStepResult, StepStatus } from "@/lib/staging/types"
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms))
-}
 
 function statusIcon(status: StepStatus, size = 18) {
   if (status === "passed")  return <CheckCircle2 size={size} className="text-emerald-500" />
@@ -60,21 +61,11 @@ function durationLabel(ms?: number) {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
 }
 
-// ─── FAILURE SCENARIOS — inject specific, realistic errors ───────────────────
-
-const FAILURE_MESSAGES: Record<FlowStepResult["step"], string[]> = {
-  captacao:    ["Timeout ao salvar no banco de staging (5002ms)", "Falha na fila de e-mail: SMTP connection refused"],
-  triagem:     ["Score de risco não calculado: modelo indisponível", "Status do paciente não atualizado: lock de concorrência"],
-  agendamento: ["Nenhum slot disponível para a data solicitada", "Conflito de agenda: médico já possui consulta no horário"],
-  confirmacao: ["Token de confirmação expirado (TTL: 300s)", "Slot realocado durante janela de confirmação"],
-  log:         ["Evento ausente no log de auditoria: confirmacao", "Tentativa de edição de log não rejeitada (vulnerabilidade)"],
-}
-
 // ─── simulate a single flow step ─────────────────────────────────────────────
 
 async function runStep(
   step: FlowStepResult,
-  failureMode: boolean,
+  forceFailAtIdx: number,
   onUpdate: (partial: Partial<FlowStepResult>) => void
 ): Promise<FlowStepResult> {
   const start = Date.now()
@@ -86,9 +77,7 @@ async function runStep(
   for (let i = 0; i < assertions.length; i++) {
     await sleep(300 + Math.random() * 400)
 
-    // In failure mode, first assertion of a random step fails
-    const shouldFail = failureMode && !stepFailed && Math.random() < 0.35
-    if (shouldFail) {
+    if (i === forceFailAtIdx) {
       const errorMsg = FAILURE_MESSAGES[step.step][i % FAILURE_MESSAGES[step.step].length]
       assertions[i] = { ...assertions[i], passed: false, detail: errorMsg }
       stepFailed = true
@@ -117,8 +106,8 @@ async function runStep(
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function StagingPage() {
-  const [report, setReport]         = useState<StagingRunReport>(() => createInitialReport())
-  const [isRunning, setIsRunning]   = useState(false)
+  const [report, setReport]           = useState<StagingRunReport>(() => createInitialReport())
+  const [isRunning, setIsRunning]     = useState(false)
   const [failureMode, setFailureMode] = useState(false)
 
   const updateFlowStep = useCallback(
@@ -138,9 +127,20 @@ export default function StagingPage() {
     setReport({ ...fresh, startedAt: new Date().toISOString(), overallStatus: "pending" })
     await sleep(200)
 
+    // When failureMode is on, pick exactly 1 step to guarantee-fail
+    let guaranteedFailStep = -1
+    if (failureMode) {
+      guaranteedFailStep = Math.floor(Math.random() * fresh.flowResults.length)
+    }
+
     const results: FlowStepResult[] = []
     for (let i = 0; i < fresh.flowResults.length; i++) {
-      const result = await runStep(fresh.flowResults[i], failureMode, (partial) =>
+      // forceFailAtIdx: pick a random assertion index within the step to fail (-1 = no forced failure)
+      const forceFailAtIdx = i === guaranteedFailStep
+        ? Math.floor(Math.random() * fresh.flowResults[i].assertions.length)
+        : -1
+
+      const result = await runStep(fresh.flowResults[i], forceFailAtIdx, (partial) =>
         updateFlowStep(i, partial)
       )
       results.push(result)
@@ -154,11 +154,6 @@ export default function StagingPage() {
       ...prev,
       finishedAt: new Date().toISOString(),
       overallStatus: allPassed ? "passed" : anyFailed ? "failed" : "partial",
-      profileResults: prev.profileResults.map((r: ProfileTestResult) => ({
-        ...r,
-        status: allPassed ? ("passed" as const) : ("pending" as const),
-        testedAt: new Date().toISOString(),
-      })),
     }))
     setIsRunning(false)
   }, [updateFlowStep, failureMode])
@@ -179,7 +174,7 @@ export default function StagingPage() {
       {/* ── header ── */}
       <section className="space-y-1">
         <h1 className="text-2xl font-bold text-foreground">
-          Semana 2 — Validação em Homologação
+          {STAGING_WEEK} — Validação em Homologação
         </h1>
         <p className="text-muted-foreground text-sm">
           Fluxo ponta-a-ponta com dados fictícios · Run ID:{" "}
@@ -328,25 +323,23 @@ export default function StagingPage() {
         </Button>
 
         {/* failure mode toggle */}
-        <label className="flex items-center gap-2 cursor-pointer ml-auto text-sm select-none">
-          <div
-            role="switch"
-            aria-checked={failureMode}
-            onClick={() => !isRunning && setFailureMode((v) => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${
-              failureMode ? "bg-destructive" : "bg-muted"
-            } ${isRunning ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        <div className="flex items-center gap-2 ml-auto">
+          <Switch
+            id="failure-mode"
+            checked={failureMode}
+            onCheckedChange={(v) => !isRunning && setFailureMode(v)}
+            disabled={isRunning}
+            className="data-[state=checked]:bg-destructive"
+          />
+          <Label
+            htmlFor="failure-mode"
+            className={`text-sm cursor-pointer select-none ${
+              failureMode ? "text-destructive font-medium" : "text-muted-foreground"
+            }`}
           >
-            <span
-              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                failureMode ? "translate-x-4" : "translate-x-0"
-              }`}
-            />
-          </div>
-          <span className={failureMode ? "text-destructive font-medium" : "text-muted-foreground"}>
             Modo falha
-          </span>
-        </label>
+          </Label>
+        </div>
 
         <Button variant="ghost" asChild>
           <a href="/staging/perfis">Matriz de Perfis →</a>
