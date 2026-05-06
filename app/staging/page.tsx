@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { CheckCircle2, XCircle, Clock, Loader2, ChevronDown, Play, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +19,15 @@ import {
   MOCK_APPOINTMENT,
 } from "@/lib/staging/mock-data"
 import type { StagingRunReport, FlowStepResult, ProfileTestResult, StepStatus } from "@/lib/staging/types"
+import type { Patient, Appointment } from "@/lib/supabase/types"
+
+// ─── scenario data — real API with mock fallback ──────────────────────────────
+
+interface ScenarioData {
+  patient: { name: string; id: string }
+  appointment: { type: string; id: string }
+  source: "api" | "mock"
+}
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +101,36 @@ async function runStep(
 export default function StagingPage() {
   const [report, setReport] = useState<StagingRunReport>(() => createInitialReport())
   const [isRunning, setIsRunning] = useState(false)
+  const [scenario, setScenario] = useState<ScenarioData>({
+    patient:     { name: MOCK_PATIENT.name,      id: MOCK_PATIENT.id },
+    appointment: { type: MOCK_APPOINTMENT.type,  id: MOCK_APPOINTMENT.id },
+    source: "mock",
+  })
+
+  // Hydrate scenario with real data from API; gracefully fall back to mock
+  useEffect(() => {
+    async function loadScenario() {
+      try {
+        const [pRes, aRes] = await Promise.all([
+          fetch("/api/patients?limit=1"),
+          fetch("/api/appointments?limit=1&status=confirmed"),
+        ])
+        if (!pRes.ok || !aRes.ok) return
+        const [pData, aData] = await Promise.all([pRes.json(), aRes.json()])
+        const patient: Patient | undefined     = pData.data?.[0]
+        const appointment: Appointment | undefined = aData.data?.[0]
+        if (!patient || !appointment) return
+        setScenario({
+          patient:     { name: patient.name,  id: patient.id },
+          appointment: { type: appointment.type, id: appointment.id },
+          source: "api",
+        })
+      } catch {
+        // API unavailable — keep mock data
+      }
+    }
+    loadScenario()
+  }, [])
 
   const updateFlowStep = useCallback(
     (index: number, partial: Partial<FlowStepResult>) => {
@@ -153,16 +192,25 @@ export default function StagingPage() {
         </p>
       </section>
 
-      {/* ── mock data card ── */}
+      {/* ── scenario data card ── */}
       <section className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-          Dados Mock do Cenário
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Dados do Cenário
+          </h2>
+          <Badge variant={scenario.source === "api" ? "default" : "secondary"} className={
+            scenario.source === "api"
+              ? "text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
+              : "text-xs"
+          }>
+            {scenario.source === "api" ? "API real" : "mock"}
+          </Badge>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
           <div className="space-y-1">
             <p className="font-medium text-slate-700 dark:text-slate-300">Paciente</p>
-            <p className="text-slate-500">{MOCK_PATIENT.name}</p>
-            <p className="text-slate-400 text-xs font-mono">{MOCK_PATIENT.id}</p>
+            <p className="text-slate-500">{scenario.patient.name}</p>
+            <p className="text-slate-400 text-xs font-mono">{scenario.patient.id}</p>
           </div>
           <div className="space-y-1">
             <p className="font-medium text-slate-700 dark:text-slate-300">Médico</p>
@@ -171,8 +219,8 @@ export default function StagingPage() {
           </div>
           <div className="space-y-1">
             <p className="font-medium text-slate-700 dark:text-slate-300">Agendamento</p>
-            <p className="text-slate-500">{MOCK_APPOINTMENT.type}</p>
-            <p className="text-slate-400 text-xs font-mono">{MOCK_APPOINTMENT.id}</p>
+            <p className="text-slate-500">{scenario.appointment.type}</p>
+            <p className="text-slate-400 text-xs font-mono">{scenario.appointment.id}</p>
           </div>
         </div>
       </section>
