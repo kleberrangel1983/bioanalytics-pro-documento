@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { parsePagination } from "@/lib/supabase/pagination"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const actor_id     = searchParams.get("actor_id")
+  const actor_id      = searchParams.get("actor_id")
   const resource_type = searchParams.get("resource_type")
-  const limit  = Math.min(Number(searchParams.get("limit") ?? 100), 500)
-  const offset = Number(searchParams.get("offset") ?? 0)
+  const page = parsePagination(searchParams, { limit: 100, maxLimit: 500 })
+  if ("error" in page) return NextResponse.json({ error: page.error }, { status: page.status })
+  const { limit, offset } = page
 
   const supabase = await createClient()
   let query = supabase

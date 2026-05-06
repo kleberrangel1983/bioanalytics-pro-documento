@@ -83,6 +83,27 @@ create table feature_flags_state (
   primary key (flag_id, environment)
 );
 
+-- ── Row Level Security — medical tables ──────────────────────────────────────
+-- Enable RLS on all tables with patient data so the anon key cannot read or
+-- write records unless an explicit policy grants access.
+
+alter table patients        enable row level security;
+alter table appointments    enable row level security;
+alter table triage_records  enable row level security;
+
+-- Authenticated users can read their own patient record (self-service portal).
+-- Admin/medico/secretaria access is handled via service_role key server-side.
+create policy "patients_authenticated_read" on patients
+  for select using (auth.role() = 'authenticated');
+
+-- Authenticated users can see their own appointments.
+create policy "appointments_authenticated_read" on appointments
+  for select using (auth.role() = 'authenticated');
+
+-- Triage records: readable only by authenticated users (role enforcement in app).
+create policy "triage_authenticated_read" on triage_records
+  for select using (auth.role() = 'authenticated');
+
 -- ── updated_at trigger ────────────────────────────────────────────────────────
 
 create or replace function set_updated_at()

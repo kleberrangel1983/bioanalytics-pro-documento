@@ -29,8 +29,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // append audit log
-  await supabase.from("audit_logs").insert({
+  // audit log — failure here means audit integrity is broken; roll back via 500
+  const { error: auditError } = await supabase.from("audit_logs").insert({
     actor_id:      parsed.data.triaged_by,
     actor_role:    "medico",
     action:        "triage.create",
@@ -38,6 +38,14 @@ export async function POST(request: Request) {
     resource_id:   data.id,
     metadata:      { risk_score: parsed.data.risk_score, symptom_count: parsed.data.symptoms.length },
   })
+
+  if (auditError) {
+    // triage was created but audit failed — surface as 500 so caller can retry
+    return NextResponse.json(
+      { error: "Triage created but audit log failed", detail: auditError.message },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({ data }, { status: 201 })
 }
