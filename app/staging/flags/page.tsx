@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   ChevronLeft,
   CheckCircle2,
@@ -231,25 +231,82 @@ function FlagCard({
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
+// ─── merge DB flag states into static flag definitions ───────────────────────
+
+type DbFlagRow = {
+  flag_id: string
+  environment: Environment
+  enabled: boolean
+  rollout_pct: number
+  role_overrides: Partial<Record<UserRole, boolean>>
+}
+
+function mergeDbState(flags: FeatureFlag[], rows: DbFlagRow[]): FeatureFlag[] {
+  if (rows.length === 0) return flags
+  const lookup = new Map<string, DbFlagRow>()
+  rows.forEach((r) => lookup.set(`${r.flag_id}::${r.environment}`, r))
+
+  return flags.map((flag) => {
+    const staging    = lookup.get(`${flag.id}::staging`)
+    const production = lookup.get(`${flag.id}::production`)
+    return {
+      ...flag,
+      environments: {
+        staging: staging
+          ? { enabled: staging.enabled, rolloutPct: staging.rollout_pct, roleOverrides: staging.role_overrides }
+          : flag.environments.staging,
+        production: production
+          ? { enabled: production.enabled, rolloutPct: production.rollout_pct, roleOverrides: production.role_overrides }
+          : flag.environments.production,
+      },
+    }
+  })
+}
+
+// ─── page ─────────────────────────────────────────────────────────────────────
+
 export default function FlagsPage() {
   const [env, setEnv] = useState<Environment>("production")
   const [previewRole, setPreviewRole] = useState<UserRole>("admin")
   const [previewUserId, setPreviewUserId] = useState(SAMPLE_USERS.admin[0])
   const [categoryFilter, setCategoryFilter] = useState<FeatureFlag["category"] | "all">("all")
+  const [liveFlags, setLiveFlags] = useState<FeatureFlag[]>(ALL_FLAGS)
+  const [dataSource, setDataSource] = useState<"api" | "mock">("mock")
+
+  // Fetch both environments from DB and merge with static definitions
+  useEffect(() => {
+    async function loadFlags() {
+      try {
+        const [sRes, pRes] = await Promise.all([
+          fetch("/api/feature-flags?env=staging"),
+          fetch("/api/feature-flags?env=production"),
+        ])
+        if (!sRes.ok || !pRes.ok) return
+        const [sData, pData] = await Promise.all([sRes.json(), pRes.json()])
+        const rows: DbFlagRow[] = [...(sData.data ?? []), ...(pData.data ?? [])]
+        if (rows.length === 0) return
+        setLiveFlags(mergeDbState(ALL_FLAGS, rows))
+        setDataSource("api")
+      } catch {
+        // API unavailable — keep static definitions
+      }
+    }
+    loadFlags()
+  }, [])
 
   const filteredFlags = useMemo(
     () =>
       categoryFilter === "all"
-        ? ALL_FLAGS
-        : ALL_FLAGS.filter((f) => f.category === categoryFilter),
-    [categoryFilter]
+        ? liveFlags
+        : liveFlags.filter((f) => f.category === categoryFilter),
+    [categoryFilter, liveFlags]
   )
 
-  const enabledInEnv = ALL_FLAGS.filter((f) => f.environments[env].enabled).length
+  const enabledInEnv = liveFlags.filter((f) => f.environments[env].enabled).length
   const activeForRole = useMemo(
     () =>
-      evaluateAll(previewUserId, previewRole, env).filter((r) => r.enabled).length,
-    [env, previewRole, previewUserId]
+      evaluateAll(previewUserId, previewRole, env, liveFlags).filter((r) => r.enabled).length,
+    [env, previewRole, previewUserId, liveFlags]
   )
 
   return (
@@ -348,12 +405,19 @@ export default function FlagsPage() {
         <div className="flex gap-6 text-sm pt-1 border-t border-slate-100 dark:border-slate-800">
           <span className="text-slate-500">
             Flags ativas no {env === "production" ? "produção" : "staging"}:{" "}
-            <strong className="text-slate-800 dark:text-slate-200">{enabledInEnv}/{ALL_FLAGS.length}</strong>
+            <strong className="text-slate-800 dark:text-slate-200">{enabledInEnv}/{liveFlags.length}</strong>
           </span>
           <span className="text-slate-500">
             Visíveis para <strong>{ROLES.find((r) => r.key === previewRole)?.label}</strong>{" "}
             <span className="font-mono text-xs text-slate-400">({previewUserId})</span>:{" "}
-            <strong className="text-emerald-600">{activeForRole}/{ALL_FLAGS.length}</strong>
+            <strong className="text-emerald-600">{activeForRole}/{liveFlags.length}</strong>
+          </span>
+          <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
+            dataSource === "api"
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+          }`}>
+            {dataSource === "api" ? "API real" : "mock"}
           </span>
         </div>
       </section>
