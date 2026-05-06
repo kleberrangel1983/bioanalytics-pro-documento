@@ -19,7 +19,21 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { AuditLog } from "./page"
+export type AuditLog = {
+  id: string
+  timestamp?: string    // legacy field (mock uses this)
+  created_at?: string   // Supabase field
+  user: string
+  user_email?: string   // Supabase field
+  role?: string
+  user_role?: string    // Supabase field
+  action: string
+  resource: string
+  ip: string
+  severity: "info" | "warning" | "critical"
+  details?: string | null
+  success: boolean
+}
 
 type Severity = "info" | "warning" | "critical"
 type Role = "admin" | "medico" | "secretaria" | "convidado"
@@ -48,21 +62,29 @@ export function AuditTable({ logs }: { logs: AuditLog[] }) {
 
   const filtered = useMemo(() => {
     let result = logs.filter((log) => {
+      const email = (log.user_email ?? log.user ?? "").toLowerCase()
+      const logRole = log.user_role ?? log.role ?? ""
       const matchSearch =
-        log.user.toLowerCase().includes(search.toLowerCase()) ||
+        email.includes(search.toLowerCase()) ||
         log.action.toLowerCase().includes(search.toLowerCase()) ||
         log.resource.toLowerCase().includes(search.toLowerCase()) ||
         log.ip.includes(search)
       const matchSeverity = severityFilter === "todos" || log.severity === severityFilter
-      const matchRole = roleFilter === "todos" || log.role === roleFilter
+      const matchRole = roleFilter === "todos" || logRole === roleFilter
       return matchSearch && matchSeverity && matchRole
     })
 
     result = [...result].sort((a, b) => {
       let cmp = 0
-      if (sortField === "timestamp") cmp = a.timestamp.localeCompare(b.timestamp)
-      else if (sortField === "user") cmp = a.user.localeCompare(b.user)
-      else if (sortField === "severity") {
+      if (sortField === "timestamp") {
+        const ta = a.created_at ?? a.timestamp ?? ""
+        const tb = b.created_at ?? b.timestamp ?? ""
+        cmp = ta.localeCompare(tb)
+      } else if (sortField === "user") {
+        const ua = a.user_email ?? a.user ?? ""
+        const ub = b.user_email ?? b.user ?? ""
+        cmp = ua.localeCompare(ub)
+      } else if (sortField === "severity") {
         const order: Record<Severity, number> = { critical: 0, warning: 1, info: 2 }
         cmp = order[a.severity] - order[b.severity]
       }
@@ -193,7 +215,14 @@ export function AuditTable({ logs }: { logs: AuditLog[] }) {
             ) : (
               filtered.map((log) => {
                 const sev = SEVERITY_CONFIG[log.severity]
-                const role = ROLE_CONFIG[log.role]
+                // Support both legacy mock shape and Supabase shape
+                const userEmail = log.user_email ?? log.user ?? ""
+                const userRole = (log.user_role ?? log.role ?? "convidado") as Role
+                const rawTs = log.created_at ?? log.timestamp ?? ""
+                const timeLabel = rawTs.includes("T")
+                  ? new Date(rawTs).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                  : rawTs.split(" ")[1] ?? rawTs
+                const role = ROLE_CONFIG[userRole] ?? ROLE_CONFIG.convidado
                 const expanded = expandedId === log.id
                 return (
                   <div key={log.id}>
@@ -202,10 +231,10 @@ export function AuditTable({ logs }: { logs: AuditLog[] }) {
                       onClick={() => setExpandedId(expanded ? null : log.id)}
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_140px_90px_80px_60px] gap-3 items-start sm:items-center">
-                        <span className="text-xs font-mono text-slate-500">{log.timestamp.split(" ")[1]}</span>
+                        <span className="text-xs font-mono text-slate-500">{timeLabel}</span>
                         <div>
                           <p className="text-sm font-medium text-slate-900">{log.action.replace(/_/g, " ")}</p>
-                          <p className="text-xs text-slate-400">{log.user}</p>
+                          <p className="text-xs text-slate-400">{userEmail}</p>
                         </div>
                         <p className="text-xs text-slate-600 truncate">{log.resource}</p>
                         <span className={cn("text-xs font-medium border rounded px-1.5 py-0.5 w-fit", role.color)}>
@@ -228,7 +257,7 @@ export function AuditTable({ logs }: { logs: AuditLog[] }) {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs">
                           <div>
                             <p className="text-slate-400 font-medium uppercase tracking-wide">Timestamp</p>
-                            <p className="text-slate-700 font-mono mt-0.5">{log.timestamp}</p>
+                            <p className="text-slate-700 font-mono mt-0.5">{rawTs}</p>
                           </div>
                           <div>
                             <p className="text-slate-400 font-medium uppercase tracking-wide">IP</p>
