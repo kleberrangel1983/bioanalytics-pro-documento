@@ -7,8 +7,10 @@ import { SamplesTable } from '@/components/samples/samples-table'
 import { SampleFilters } from '@/components/samples/sample-filters'
 import { SampleForm } from '@/components/samples/sample-form'
 import { MOCK_SAMPLES } from '@/lib/mock-data'
-import { Plus } from 'lucide-react'
+import { Plus, Download } from 'lucide-react'
 import type { SampleStatus, SampleType } from '@/lib/types'
+import { exportSamplesToCSV } from '@/lib/export'
+import { toast } from 'sonner'
 
 const PAGE_SIZE = 20
 
@@ -18,6 +20,11 @@ export default function SamplesPage() {
   const [statusFilter, setStatusFilter] = useState<SampleStatus | 'all'>('all')
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState(false)
+
+  function handleExport() {
+    exportSamplesToCSV(filtered)
+    toast.success(`${filtered.length} amostra(s) exportada(s) para CSV`)
+  }
 
   function clearFilters() {
     setSearch('')
@@ -43,13 +50,18 @@ export default function SamplesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Amostras</h1>
           <p className="text-muted-foreground">{filtered.length} amostra(s) encontrada(s)</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Amostra
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleExport}>
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nova Amostra
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Cadastrar Nova Amostra</DialogTitle>
