@@ -407,7 +407,7 @@ export default function WhatsAppHomologacaoPage() {
                     >
                       {msg.timestamp}{" "}
                       {msg.direction === "out" && (
-                        <span>
+                        <span className={msg.status === "read" ? "text-blue-300" : ""}>
                           {msg.status === "read" ? "✓✓" : msg.status === "delivered" ? "✓✓" : "✓"}
                         </span>
                       )}
