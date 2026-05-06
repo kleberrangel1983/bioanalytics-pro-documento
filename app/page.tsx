@@ -39,7 +39,7 @@ export default function HomePage() {
       {/* ── hero ── */}
       <section className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center space-y-8">
         {/* logo */}
-        <div className="relative w-28 h-28 rounded-full overflow-hidden ring-2 ring-brand-gold/40 shadow-[0_0_40px_oklch(0.718_0.13_84_/_0.15)]">
+        <div className="relative w-28 h-28 rounded-2xl overflow-hidden ring-2 ring-brand-gold/40 shadow-[0_0_40px_color-mix(in_oklch,var(--color-brand-gold)_15%,transparent)]">
           <Image
             src="/logo-bioanalytics.webp"
             alt="BioAnalytics Pro"

@@ -1,13 +1,14 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Home, ArrowLeft } from "lucide-react"
+import { Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/back-button"
 
 export default function NotFound() {
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center space-y-8">
       {/* logo */}
-      <div className="relative w-20 h-20 rounded-full overflow-hidden ring-1 ring-brand-gold/30 opacity-80">
+      <div className="relative w-20 h-20 rounded-xl overflow-hidden ring-1 ring-brand-gold/30 opacity-80">
         <Image
           src="/logo-bioanalytics.webp"
           alt="BioAnalytics Pro"
@@ -31,12 +32,7 @@ export default function NotFound() {
 
       {/* actions */}
       <div className="flex items-center gap-3">
-        <Button asChild variant="outline" className="gap-2">
-          <Link href="javascript:history.back()">
-            <ArrowLeft size={15} />
-            Voltar
-          </Link>
-        </Button>
+        <BackButton />
         <Button asChild className="gap-2">
           <Link href="/">
             <Home size={15} />
