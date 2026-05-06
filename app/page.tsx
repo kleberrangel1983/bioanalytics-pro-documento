@@ -12,6 +12,7 @@ import {
   Users,
   ChevronRight,
   Lock,
+  FlaskConical,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -136,6 +137,14 @@ const MODULES = [
     description: "Registro de ações por perfil autorizado",
     status: "Acesso restrito",
     statusVariant: "destructive" as const,
+  },
+  {
+    href: "/uat",
+    icon: <FlaskConical className="h-6 w-6" />,
+    title: "UAT — Usuários Piloto",
+    description: "Formulários de feedback e rastreamento de sessão",
+    status: "Aberto",
+    statusVariant: "secondary" as const,
   },
 ]
 
