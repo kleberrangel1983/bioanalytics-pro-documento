@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { parsePagination } from "@/lib/supabase/pagination"
+import { requireAuth } from "@/lib/supabase/require-auth"
 import { z } from "zod"
 
 const CreateSchema = z.object({
@@ -11,7 +12,18 @@ const CreateSchema = z.object({
   notes:        z.string().max(1000).optional(),
 })
 
+// Roles that may see the patient CPF in appointment responses
+const CPF_ALLOWED_ROLES = new Set(["admin", "medico"])
+
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+  const { role } = auth.ctx
+
+  if (!["admin", "medico", "secretaria"].includes(role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const { searchParams } = new URL(request.url)
   const status = searchParams.get("status")
   const page = parsePagination(searchParams)
@@ -34,10 +46,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ data, count, limit, offset })
+  // Mask CPF for roles without explicit access (Finding #11)
+  const masked = CPF_ALLOWED_ROLES.has(role)
+    ? data
+    : data?.map((appt) => ({
+        ...appt,
+        patients: appt.patients
+          ? { ...appt.patients, cpf: "***.***.***-**" }
+          : appt.patients,
+      }))
+
+  return NextResponse.json({ data: masked, count, limit, offset })
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth.response) return auth.response
+  if (!["admin", "medico", "secretaria"].includes(auth.ctx.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const body = await request.json().catch(() => null)
   const parsed = CreateSchema.safeParse(body)
   if (!parsed.success) {

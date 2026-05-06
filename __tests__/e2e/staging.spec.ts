@@ -1,6 +1,31 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type Page } from "@playwright/test"
+
+// ─── Auth fixture ─────────────────────────────────────────────────────────────
+// AuthGuard reads from localStorage. We inject a valid admin session via
+// addInitScript so it runs before React hydrates on every page load.
+
+const ADMIN_SESSION = {
+  user: {
+    id: "usr_admin_001",
+    name: "Carlos Administrador",
+    email: "admin@bioanalytics.local",
+    role: "admin",
+    avatarInitials: "CA",
+    department: "Gestão",
+  },
+  token: "mock-jwt-e2e-test-session",
+  expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+}
+
+async function injectAuth(page: Page) {
+  await page.addInitScript((session) => {
+    localStorage.setItem("bioanalytics_session", JSON.stringify(session))
+  }, ADMIN_SESSION)
+}
 
 test.describe("/staging — fluxo E2E", () => {
+  test.beforeEach(async ({ page }) => { await injectAuth(page) })
+
   test("renderiza título e botão de execução", async ({ page }) => {
     await page.goto("/staging")
     await expect(page.getByRole("heading", { name: /Semana 2/i })).toBeVisible()
@@ -25,6 +50,8 @@ test.describe("/staging — fluxo E2E", () => {
 })
 
 test.describe("/staging/carga — testes de carga", () => {
+  test.beforeEach(async ({ page }) => { await injectAuth(page) })
+
   test("renderiza os 4 cenários", async ({ page }) => {
     await page.goto("/staging/carga")
     for (const label of ["Smoke", "Carga Normal", "Pico", "Stress"]) {
@@ -50,6 +77,8 @@ test.describe("/staging/carga — testes de carga", () => {
 })
 
 test.describe("/staging/flags — feature flags", () => {
+  test.beforeEach(async ({ page }) => { await injectAuth(page) })
+
   test("renderiza lista de flags", async ({ page }) => {
     await page.goto("/staging/flags")
     await expect(page.getByText("Novo Dashboard Analítico")).toBeVisible()
@@ -64,12 +93,15 @@ test.describe("/staging/flags — feature flags", () => {
 
   test("seletor de perfil avalia flags para o novo perfil", async ({ page }) => {
     await page.goto("/staging/flags")
-    await page.getByRole("combobox").first().selectOption("paciente")
-    await expect(page.getByText(/paciente/i).first()).toBeVisible()
+    // Role selector uses <button> elements (not a <select>/combobox)
+    await page.getByRole("button", { name: /Paciente/i }).click()
+    await expect(page.getByText(/Paciente/i).first()).toBeVisible()
   })
 })
 
 test.describe("/staging/golive — checklist", () => {
+  test.beforeEach(async ({ page }) => { await injectAuth(page) })
+
   test("renderiza itens do checklist", async ({ page }) => {
     await page.goto("/staging/golive")
     await expect(page.getByText(/checklist/i).first()).toBeVisible()
@@ -87,6 +119,8 @@ test.describe("/staging/golive — checklist", () => {
 })
 
 test.describe("/staging/observabilidade — métricas", () => {
+  test.beforeEach(async ({ page }) => { await injectAuth(page) })
+
   test("renderiza painel de métricas com botão iniciar", async ({ page }) => {
     await page.goto("/staging/observabilidade")
     await expect(page.getByRole("button", { name: /Iniciar/i })).toBeVisible()
@@ -102,6 +136,8 @@ test.describe("/staging/observabilidade — métricas", () => {
 })
 
 test.describe("/staging/lgpd — compliance", () => {
+  test.beforeEach(async ({ page }) => { await injectAuth(page) })
+
   test("renderiza princípios LGPD", async ({ page }) => {
     await page.goto("/staging/lgpd")
     await expect(page.getByText(/LGPD/i).first()).toBeVisible()

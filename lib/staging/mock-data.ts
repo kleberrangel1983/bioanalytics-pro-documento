@@ -232,7 +232,7 @@ export function createInitialReport(): StagingRunReport {
   const permissions = Object.keys(ROLE_PERMISSIONS.admin) as Permission[]
 
   return {
-    runId: `RUN-${Date.now()}`,
+    runId: `RUN-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     startedAt: new Date().toISOString(),
     environment: "staging",
     overallStatus: "pending",
