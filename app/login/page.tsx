@@ -3,6 +3,14 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, LogIn, FlaskConical, Eye, EyeOff } from "lucide-react"
+
+function getRedirectTarget(): string {
+  if (typeof window === "undefined") return "/"
+  const from = new URLSearchParams(window.location.search).get("from") ?? ""
+  // Guard against open-redirect: only allow same-origin relative paths
+  if (from.startsWith("/") && !from.startsWith("//")) return from
+  return "/"
+}
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,7 +37,7 @@ export default function LoginPage() {
       return
     }
     startTransition(() => {
-      router.replace("/")
+      router.replace(getRedirectTarget())
     })
   }
 
